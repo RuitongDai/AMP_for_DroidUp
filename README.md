@@ -1,27 +1,3 @@
-## Features
-
-### 1. Humanoid Robot Training
-This repository offers comprehensive guidance and scripts for the training of humanoid robots. Humanoid-Gym features specialized rewards for humanoid robots, simplifying the difficulty of sim-to-real transfer. In this repository, we use RobotEra's XBot-L as a primary example. It can also be used for other robots with minimal adjustments. Our resources cover setup, configuration, and execution. Our goal is to fully prepare the robot for real-world locomotion by providing in-depth training and optimization.
-
-
-- **Comprehensive Training Guidelines**: We offer thorough walkthroughs for each stage of the training process.
-- **Step-by-Step Configuration Instructions**: Our guidance is clear and succinct, ensuring an efficient setup process.
-- **Execution Scripts for Easy Deployment**: Utilize our pre-prepared scripts to streamline the training workflow.
-
-### 2. Sim2Sim Support
-We also share our sim2sim pipeline, which allows you to transfer trained policies to highly accurate and carefully designed simulated environments. Once you acquire the robot, you can confidently deploy the RL-trained policies in real-world settings.
-
-Our simulator settings, particularly with Mujoco, are finely tuned to closely mimic real-world scenarios. This careful calibration ensures that the performances in both simulated and real-world environments are closely aligned. This improvement makes our simulations more trustworthy and enhances our confidence in their applicability to real-world scenarios.
-
-
-### 3. Denoising World Model Learning (Coming Soon!)
-Denoising World Model Learning(DWL) presents an advanced sim-to-real framework that integrates state estimation and system identification. This dual-method approach ensures the robot's learning and adaptation are both practical and effective in real-world contexts.
-
-- **Enhanced Sim-to-real Adaptability**: Techniques to optimize the robot's transition from simulated to real environments.
-- **Improved State Estimation Capabilities**: Advanced tools for precise and reliable state analysis.
-
-### Dexterous Hand Manipulation (Coming Soon!)
-
 ## Installation
 
 1. Generate a new Python virtual environment with Python 3.8 using `conda create -n AMP_for_DroidUp python=3.8`.
