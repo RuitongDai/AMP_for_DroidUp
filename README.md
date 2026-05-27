@@ -12,6 +12,15 @@
    - Clone this repository.
    - `cd humanoid-gym && pip install -e .`
 
+
+## Code Structure
+
+1. Every environment hinges on an `env` file (`legged_robot.py`) and a `configuration` file (`legged_robot_config.py`). The latter houses two classes: `LeggedRobotCfg` (encompassing all environmental parameters) and `LeggedRobotCfgPPO` (denoting all training parameters).
+2. Both `env` and `config` classes use inheritance.
+3. Non-zero reward scales specified in `cfg` contribute a function of the corresponding name to the sum-total reward.
+4. Tasks must be registered with `task_registry.register(name, EnvClass, EnvConfig, TrainConfig)`. Registration may occur within `envs/__init__.py`, or outside of this repository.
+
+
 ## Usage Guide
 
 #### Examples
@@ -23,40 +32,35 @@ python scripts/play.py --task=x3_zq_amp
 python scripts/play_amp_motions.py --task=x3_zq_amp
 
 ```
-#### 1. Default Tasks
 
-
-- **humanoid_ppo**
-   - Purpose: Baseline, PPO policy, Multi-frame low-level control
-   - Observation Space: Variable $(47 \times H)$ dimensions, where $H$ is the number of frames
-   - $[O_{t-H} ... O_t]$
-   - Privileged Information: $73$ dimensions
-
-- **humanoid_dwl (coming soon)**
-
-#### 2. PPO Policy
-- **Training Command**: For training the PPO policy, execute:
-  ```
-  python humanoid/scripts/train.py --task=humanoid_ppo --load_run log_file_path --name run_name
-  ```
-- **Running a Trained Policy**: To deploy a trained PPO policy, use:
-  ```
-  python humanoid/scripts/play.py --task=humanoid_ppo --load_run log_file_path --name run_name
-  ```
-- By default, the latest model of the last run from the experiment folder is loaded. However, other run iterations/models can be selected by adjusting `load_run` and `checkpoint` in the training config.
-
-#### 3. Parameters
-- **CPU and GPU Usage**: To run simulations on the CPU, set both `--sim_device=cpu` and `--rl_device=cpu`. For GPU operations, specify `--sim_device=cuda:{0,1,2...}` and `--rl_device={0,1,2...}` accordingly. Please note that `CUDA_VISIBLE_DEVICES` is not applicable, and it's essential to match the `--sim_device` and `--rl_device` settings.
-- **Headless Operation**: Include `--headless` for operations without rendering.
-- **Rendering Control**: Press 'v' to toggle rendering during training.
-- **Policy Location**: Trained policies are saved in `humanoid/logs/<experiment_name>/<date_time>_<run_name>/model_<iteration>.pt`.
-
-## Code Structure
-
-1. Every environment hinges on an `env` file (`legged_robot.py`) and a `configuration` file (`legged_robot_config.py`). The latter houses two classes: `LeggedRobotCfg` (encompassing all environmental parameters) and `LeggedRobotCfgPPO` (denoting all training parameters).
-2. Both `env` and `config` classes use inheritance.
-3. Non-zero reward scales specified in `cfg` contribute a function of the corresponding name to the sum-total reward.
-4. Tasks must be registered with `task_registry.register(name, EnvClass, EnvConfig, TrainConfig)`. Registration may occur within `envs/__init__.py`, or outside of this repository.
+### Train:
+```bash
+python scripts/train.py --task=x3_zq_amp  --headless --num_envs 4096
+```
+- To run on CPU add following arguments: --sim_device=cpu, --rl_device=cpu (sim on CPU and rl on GPU is possible).
+- To run headless (no rendering) add --headless.
+- Important: To improve performance, once the training starts press v to stop the rendering. You can then enable it later to check the progress.
+- The trained policy is saved in issacgym_anymal/logs/<experiment_name>/<date_time>_<run_name>/model_<iteration>.pt. Where <experiment_name> and <run_name> are defined in the train config.
+- The following command line arguments override the values set in the config files:
+  - --task TASK: Task name.
+  - --resume: Resume training from a checkpoint
+  - --experiment_name EXPERIMENT_NAME: Name of the experiment to run or load.
+  - --run_name RUN_NAME: Name of the run.
+  - --load_run LOAD_RUN: Name of the run to load when resume=True. If -1: will load the last run.
+  - --checkpoint CHECKPOINT: Saved model checkpoint number. If -1: will load the last checkpoint.
+  - --num_envs NUM_ENVS: Number of environments to create.
+  - --seed SEED: Random seed.
+  - --max_iterations MAX_ITERATIONS: Maximum number of training iterations.
+### Play a trained policy:
+```bash
+python scripts/play.py --task=x3_zq_amp
+```
+- By default, the loaded policy is the last model of the last run of the experiment folder.
+- Other runs/model iteration can be selected by setting load_run and checkpoint in the train config.
+### Play amp motions:
+```bash
+python scripts/play_amp_motions.py --task=x3_zq_amp
+```
 
 ## Troubleshooting
 
@@ -70,37 +74,8 @@ ImportError: libpython3.8.so.1.0: cannot open shared object file: No such file o
 export LD_LIBRARY_PATH="~/miniconda3/envs/your_env/lib:$LD_LIBRARY_PATH" 
 # OR
 sudo apt install libpython3.8
-
-```
-
-## Citation
-
-Please cite the following if you use this code or parts of it:
-```
-@article{gu2024humanoid,
-  title={Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer},
-  author={Gu, Xinyang and Wang, Yen-Jen and Chen, Jianyu},
-  journal={arXiv preprint arXiv:2404.05695},
-  year={2024}
-}
 ```
 
 ## Acknowledgment
 
 The implementation of Humanoid-Gym relies on resources from [legged_gym](https://github.com/leggedrobotics/legged_gym) and [rsl_rl](https://github.com/leggedrobotics/rsl_rl) projects, created by the Robotic Systems Lab. We specifically utilize the `LeggedRobot` implementation from their research to enhance our codebase.
-
-## Any Questions?
-
-If you have further questions, please feel free to contact [support@robotera.com](mailto:support@robotera.com) or create an issue in this repository.
-
-## wandb
-### 挂代理，这里用的是clash for windows
-```bash
-export HTTP_PROXY=http://127.0.0.1:7899
-export HTTPS_PROXY=http://127.0.0.1:7899
-```
-### wandb 项目名称
-```bash
-entity="2741355724-droid",
-project="x2_terrain",
-```
