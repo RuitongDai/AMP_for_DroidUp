@@ -8,14 +8,14 @@ from .utils import quaternion_slerp
 from humanoid.algo.utils import pose3d
 from humanoid.algo.utils import motion_util
 
-class AMPLoader:
+class E1AMPLoader:
     POS_SIZE = 3  # 位置维度(x, y, z)
     ROT_SIZE = 4  # 旋转维度(四元数)
-    JOINT_POS_SIZE = 14  # 关节位置维度(14个关节)
+    JOINT_POS_SIZE = 13  # 关节位置维度(14个关节)
     FOOT_POS_SIZE = 6  # 足部位置维度(2只脚 × 3个坐标)
     LINEAR_VEL_SIZE = 3  # 线速度维度(x, y, z)
     ANGULAR_VEL_SIZE = 3  # 角速度维度(x, y, z)
-    JOINT_VEL_SIZE = 14  # 关节速度维度(14个关节)
+    JOINT_VEL_SIZE = 13  # 关节速度维度(14个关节)
 
     # 根节点位置索引范围
     ROOT_POS_START_IDX = 0
@@ -88,19 +88,19 @@ class AMPLoader:
 
                 # 规范化并标准化四元数
                 for f_i in range(motion_data.shape[0]):
-                    root_rot = AMPLoader.get_root_rot(motion_data[f_i])
+                    root_rot = E1AMPLoader.get_root_rot(motion_data[f_i])
                     root_rot = pose3d.QuaternionNormalize(root_rot)  # 归一化四元数
                     root_rot = motion_util.standardize_quaternion(root_rot)  # 标准化四元数
-                    motion_data[f_i, AMPLoader.POS_SIZE : (AMPLoader.POS_SIZE + AMPLoader.ROT_SIZE)] = root_rot
+                    motion_data[f_i, E1AMPLoader.POS_SIZE : (E1AMPLoader.POS_SIZE + E1AMPLoader.ROT_SIZE)] = root_rot
 
                 # 提取不包含根节点位置和旋转的观察数据(用于AMP)
                 self.trajectories.append(
-                    torch.tensor(motion_data[:,AMPLoader.ROOT_ROT_END_IDX:AMPLoader.JOINT_VEL_END_IDX],
+                    torch.tensor(motion_data[:,E1AMPLoader.ROOT_ROT_END_IDX:E1AMPLoader.JOINT_VEL_END_IDX],
                                  dtype=torch.float32, device=device)
                 )
                 # 保存完整的轨迹数据
                 self.trajectories_full.append(
-                    torch.tensor(motion_data[:, :AMPLoader.JOINT_VEL_END_IDX],
+                    torch.tensor(motion_data[:, :E1AMPLoader.JOINT_VEL_END_IDX],
                     dtype=torch.float32, device=device)
                 )
                 self.trajectory_idxs.append(i)
@@ -137,19 +137,19 @@ class AMPLoader:
 
     def data_process(self, motion_data):
         """数据预处理：从原始动作数据中提取各个分量"""
-        root_pos = AMPLoader.get_root_pos_batch(motion_data)  # 提取根节点位置
-        root_rot = AMPLoader.get_root_rot_batch(motion_data)  # 提取根节点旋转
+        root_pos = E1AMPLoader.get_root_pos_batch(motion_data)  # 提取根节点位置
+        root_rot = E1AMPLoader.get_root_rot_batch(motion_data)  # 提取根节点旋转
         gravity_vec = np.array([0., 0., -1.], dtype=np.float32)  # 重力向量(未使用)
 
-        joint_pos = AMPLoader.get_joint_pose_batch(motion_data)  # 提取关节位置
+        joint_pos = E1AMPLoader.get_joint_pose_batch(motion_data)  # 提取关节位置
         # joint_pos[:, [4, 10]] = 0.  # 可选：将某些关节位置设为0
 
-        foot_pos = AMPLoader.get_foot_pose_batch(motion_data)  # 提取足部位置
+        foot_pos = E1AMPLoader.get_foot_pose_batch(motion_data)  # 提取足部位置
 
-        lin_vel = AMPLoader.get_linear_vel_batch(motion_data)  # 提取线速度
-        ang_vel = AMPLoader.get_angular_vel_batch(motion_data)  # 提取角速度
+        lin_vel = E1AMPLoader.get_linear_vel_batch(motion_data)  # 提取线速度
+        ang_vel = E1AMPLoader.get_angular_vel_batch(motion_data)  # 提取角速度
 
-        joint_vel = AMPLoader.get_joint_vel_batch(motion_data)  # 提取关节速度
+        joint_vel = E1AMPLoader.get_joint_vel_batch(motion_data)  # 提取关节速度
         # joint_vel[:, [4, 10]] = 0.  # 可选：将某些关节速度设为0
 
         # 将所有分量水平堆叠成完整的动作向量
@@ -227,23 +227,23 @@ class AMPLoader:
         idx_low, idx_high = np.floor(p * n).astype(np.int64), np.ceil(p * n).astype(np.int64)
 
         # 预创建张量以存储位置、旋转和AMP观察分量
-        all_frame_pos_starts = torch.zeros(len(traj_idxs), AMPLoader.POS_SIZE, device=self.device)
-        all_frame_pos_ends = torch.zeros(len(traj_idxs), AMPLoader.POS_SIZE, device=self.device)
-        all_frame_rot_starts = torch.zeros(len(traj_idxs), AMPLoader.ROT_SIZE, device=self.device)
-        all_frame_rot_ends = torch.zeros(len(traj_idxs), AMPLoader.ROT_SIZE, device=self.device)
-        all_frame_amp_starts = torch.zeros(len(traj_idxs), AMPLoader.JOINT_VEL_END_IDX - AMPLoader.JOINT_POSE_START_IDX, device=self.device)
-        all_frame_amp_ends = torch.zeros(len(traj_idxs), AMPLoader.JOINT_VEL_END_IDX - AMPLoader.JOINT_POSE_START_IDX, device=self.device)
+        all_frame_pos_starts = torch.zeros(len(traj_idxs), E1AMPLoader.POS_SIZE, device=self.device)
+        all_frame_pos_ends = torch.zeros(len(traj_idxs), E1AMPLoader.POS_SIZE, device=self.device)
+        all_frame_rot_starts = torch.zeros(len(traj_idxs), E1AMPLoader.ROT_SIZE, device=self.device)
+        all_frame_rot_ends = torch.zeros(len(traj_idxs), E1AMPLoader.ROT_SIZE, device=self.device)
+        all_frame_amp_starts = torch.zeros(len(traj_idxs), E1AMPLoader.JOINT_VEL_END_IDX - E1AMPLoader.JOINT_POSE_START_IDX, device=self.device)
+        all_frame_amp_ends = torch.zeros(len(traj_idxs), E1AMPLoader.JOINT_VEL_END_IDX - E1AMPLoader.JOINT_POSE_START_IDX, device=self.device)
 
         # 为每条轨迹提取对应的数据分量
         for traj_idx in set(traj_idxs):
             trajectory = self.trajectories_full[traj_idx]
             traj_mask = traj_idxs == traj_idx
-            all_frame_pos_starts[traj_mask] = AMPLoader.get_root_pos_batch(trajectory[idx_low[traj_mask]])
-            all_frame_pos_ends[traj_mask] = AMPLoader.get_root_pos_batch(trajectory[idx_high[traj_mask]])
-            all_frame_rot_starts[traj_mask] = AMPLoader.get_root_rot_batch(trajectory[idx_low[traj_mask]])
-            all_frame_rot_ends[traj_mask] = AMPLoader.get_root_rot_batch(trajectory[idx_high[traj_mask]])
-            all_frame_amp_starts[traj_mask] = trajectory[idx_low[traj_mask]][:, AMPLoader.JOINT_POSE_START_IDX:AMPLoader.JOINT_VEL_END_IDX]
-            all_frame_amp_ends[traj_mask] = trajectory[idx_high[traj_mask]][:, AMPLoader.JOINT_POSE_START_IDX:AMPLoader.JOINT_VEL_END_IDX]
+            all_frame_pos_starts[traj_mask] = E1AMPLoader.get_root_pos_batch(trajectory[idx_low[traj_mask]])
+            all_frame_pos_ends[traj_mask] = E1AMPLoader.get_root_pos_batch(trajectory[idx_high[traj_mask]])
+            all_frame_rot_starts[traj_mask] = E1AMPLoader.get_root_rot_batch(trajectory[idx_low[traj_mask]])
+            all_frame_rot_ends[traj_mask] = E1AMPLoader.get_root_rot_batch(trajectory[idx_high[traj_mask]])
+            all_frame_amp_starts[traj_mask] = trajectory[idx_low[traj_mask]][:, E1AMPLoader.JOINT_POSE_START_IDX:E1AMPLoader.JOINT_VEL_END_IDX]
+            all_frame_amp_ends[traj_mask] = trajectory[idx_high[traj_mask]][:, E1AMPLoader.JOINT_POSE_START_IDX:E1AMPLoader.JOINT_VEL_END_IDX]
 
         blend = torch.tensor(p * n - idx_low, device=self.device, dtype=torch.float32).unsqueeze(-1)
 
@@ -291,13 +291,13 @@ class AMPLoader:
             两个帧的插值结果
         """
         # 分别提取两个帧的各个分量
-        root_pos0, root_pos1 = AMPLoader.get_root_pos(frame0), AMPLoader.get_root_pos(frame1)
-        root_rot0, root_rot1 = AMPLoader.get_root_rot(frame0), AMPLoader.get_root_rot(frame1)
-        joints0, joints1 = AMPLoader.get_joint_pose(frame0), AMPLoader.get_joint_pose(frame1)
-        foot_pos0, foot_pos1 = AMPLoader.get_foot_pose(frame0), AMPLoader.get_foot_pose(frame1)
-        linear_vel_0, linear_vel_1 = AMPLoader.get_linear_vel(frame0), AMPLoader.get_linear_vel(frame1)
-        angular_vel_0, angular_vel_1 = AMPLoader.get_angular_vel(frame0), AMPLoader.get_angular_vel(frame1)
-        joint_vel_0, joint_vel_1 = AMPLoader.get_joint_vel(frame0), AMPLoader.get_joint_vel(frame1)
+        root_pos0, root_pos1 = E1AMPLoader.get_root_pos(frame0), E1AMPLoader.get_root_pos(frame1)
+        root_rot0, root_rot1 = E1AMPLoader.get_root_rot(frame0), E1AMPLoader.get_root_rot(frame1)
+        joints0, joints1 = E1AMPLoader.get_joint_pose(frame0), E1AMPLoader.get_joint_pose(frame1)
+        foot_pos0, foot_pos1 = E1AMPLoader.get_foot_pose(frame0), E1AMPLoader.get_foot_pose(frame1)
+        linear_vel_0, linear_vel_1 = E1AMPLoader.get_linear_vel(frame0), E1AMPLoader.get_linear_vel(frame1)
+        angular_vel_0, angular_vel_1 = E1AMPLoader.get_angular_vel(frame0), E1AMPLoader.get_angular_vel(frame1)
+        joint_vel_0, joint_vel_1 = E1AMPLoader.get_joint_vel(frame0), E1AMPLoader.get_joint_vel(frame1)
 
         # 对各分量进行插值
         blend_root_pos = self.slerp(root_pos0, root_pos1, blend)
@@ -319,7 +319,7 @@ class AMPLoader:
 
     def compute_obs_dim(self):
         """计算观察维度(不包括根节点位置和旋转)"""
-        s = self.preloaded_s[0, AMPLoader.JOINT_POSE_START_IDX: AMPLoader.JOINT_VEL_END_IDX]
+        s = self.preloaded_s[0, E1AMPLoader.JOINT_POSE_START_IDX: E1AMPLoader.JOINT_VEL_END_IDX]
         return s.shape[0] - 6  # 减去6维
 
     def feed_forward_generator(self, num_mini_batch, mini_batch_size):
@@ -337,13 +337,13 @@ class AMPLoader:
             # 从预加载的转移数据中提取关节位置和速度信息
 
             # 提取关节位置
-            s = self.preloaded_s[idxs, AMPLoader.JOINT_POSE_START_IDX:AMPLoader.JOINT_POSE_END_IDX]
+            s = self.preloaded_s[idxs, E1AMPLoader.JOINT_POSE_START_IDX:E1AMPLoader.JOINT_POSE_END_IDX]
             # 拼接线速度、角速度和关节速度
-            s = torch.cat([s, self.preloaded_s[idxs, AMPLoader.LINEAR_VEL_START_IDX : AMPLoader.JOINT_VEL_END_IDX]], dim=-1)
+            s = torch.cat([s, self.preloaded_s[idxs, E1AMPLoader.LINEAR_VEL_START_IDX : E1AMPLoader.JOINT_VEL_END_IDX]], dim=-1)
 
             # 下一时刻的状态
-            s_next = self.preloaded_s_next[idxs, AMPLoader.JOINT_POSE_START_IDX:AMPLoader.JOINT_POSE_END_IDX]
-            s_next = torch.cat([s_next, self.preloaded_s_next[idxs, AMPLoader.LINEAR_VEL_START_IDX : AMPLoader.JOINT_VEL_END_IDX]], dim=-1)
+            s_next = self.preloaded_s_next[idxs, E1AMPLoader.JOINT_POSE_START_IDX:E1AMPLoader.JOINT_POSE_END_IDX]
+            s_next = torch.cat([s_next, self.preloaded_s_next[idxs, E1AMPLoader.LINEAR_VEL_START_IDX : E1AMPLoader.JOINT_VEL_END_IDX]], dim=-1)
 
             yield s, s_next
 
@@ -360,56 +360,56 @@ class AMPLoader:
     # 以下是静态方法用于提取帧中的各个分量
     def get_root_pos(pose):
         """提取单个帧的根节点位置"""
-        return pose[AMPLoader.ROOT_POS_START_IDX : AMPLoader.ROOT_POS_END_IDX]
+        return pose[E1AMPLoader.ROOT_POS_START_IDX : E1AMPLoader.ROOT_POS_END_IDX]
 
     def get_root_pos_batch(poses):
         """提取批量帧的根节点位置"""
-        return poses[:, AMPLoader.ROOT_POS_START_IDX : AMPLoader.ROOT_POS_END_IDX]
+        return poses[:, E1AMPLoader.ROOT_POS_START_IDX : E1AMPLoader.ROOT_POS_END_IDX]
 
     def get_root_rot(pose):
         """提取单个帧的根节点旋转"""
-        return pose[AMPLoader.ROOT_ROT_START_IDX : AMPLoader.ROOT_ROT_END_IDX]
+        return pose[E1AMPLoader.ROOT_ROT_START_IDX : E1AMPLoader.ROOT_ROT_END_IDX]
 
     def get_root_rot_batch(poses):
         """提取批量帧的根节点旋转"""
-        return poses[:, AMPLoader.ROOT_ROT_START_IDX : AMPLoader.ROOT_ROT_END_IDX]
+        return poses[:, E1AMPLoader.ROOT_ROT_START_IDX : E1AMPLoader.ROOT_ROT_END_IDX]
 
     def get_joint_pose(pose):
         """提取单个帧的关节位置"""
-        return pose[AMPLoader.JOINT_POSE_START_IDX : AMPLoader.JOINT_POSE_END_IDX]
+        return pose[E1AMPLoader.JOINT_POSE_START_IDX : E1AMPLoader.JOINT_POSE_END_IDX]
 
     def get_joint_pose_batch(poses):
         """提取批量帧的关节位置"""
-        return poses[:, AMPLoader.JOINT_POSE_START_IDX : AMPLoader.JOINT_POSE_END_IDX]
+        return poses[:, E1AMPLoader.JOINT_POSE_START_IDX : E1AMPLoader.JOINT_POSE_END_IDX]
 
     def get_foot_pose(pose):
         """提取单个帧的足部位置"""
-        return pose[AMPLoader.FOOT_POSE_START_IDX : AMPLoader.FOOT_POSE_END_IDX]
+        return pose[E1AMPLoader.FOOT_POSE_START_IDX : E1AMPLoader.FOOT_POSE_END_IDX]
 
     def get_foot_pose_batch(poses):
         """提取批量帧的足部位置"""
-        return poses[:, AMPLoader.FOOT_POSE_START_IDX : AMPLoader.FOOT_POSE_END_IDX]
+        return poses[:, E1AMPLoader.FOOT_POSE_START_IDX : E1AMPLoader.FOOT_POSE_END_IDX]
 
     def get_linear_vel(pose):
         """提取单个帧的线速度"""
-        return pose[AMPLoader.LINEAR_VEL_START_IDX : AMPLoader.LINEAR_VEL_END_IDX]
+        return pose[E1AMPLoader.LINEAR_VEL_START_IDX : E1AMPLoader.LINEAR_VEL_END_IDX]
 
     def get_linear_vel_batch(poses):
         """提取批量帧的线速度"""
-        return poses[:, AMPLoader.LINEAR_VEL_START_IDX : AMPLoader.LINEAR_VEL_END_IDX]
+        return poses[:, E1AMPLoader.LINEAR_VEL_START_IDX : E1AMPLoader.LINEAR_VEL_END_IDX]
 
     def get_angular_vel(pose):
         """提取单个帧的角速度"""
-        return pose[AMPLoader.ANGULAR_VEL_START_IDX : AMPLoader.ANGULAR_VEL_END_IDX]
+        return pose[E1AMPLoader.ANGULAR_VEL_START_IDX : E1AMPLoader.ANGULAR_VEL_END_IDX]
 
     def get_angular_vel_batch(poses):
         """提取批量帧的角速度"""
-        return poses[:, AMPLoader.ANGULAR_VEL_START_IDX : AMPLoader.ANGULAR_VEL_END_IDX]
+        return poses[:, E1AMPLoader.ANGULAR_VEL_START_IDX : E1AMPLoader.ANGULAR_VEL_END_IDX]
 
     def get_joint_vel(pose):
         """提取单个帧的关节速度"""
-        return pose[AMPLoader.JOINT_VEL_START_IDX : AMPLoader.JOINT_VEL_END_IDX]
+        return pose[E1AMPLoader.JOINT_VEL_START_IDX : E1AMPLoader.JOINT_VEL_END_IDX]
 
     def get_joint_vel_batch(poses):
         """提取批量帧的关节速度"""
-        return poses[:, AMPLoader.JOINT_VEL_START_IDX:AMPLoader.JOINT_VEL_END_IDX]
+        return poses[:, E1AMPLoader.JOINT_VEL_START_IDX:E1AMPLoader.JOINT_VEL_END_IDX]

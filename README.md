@@ -27,9 +27,9 @@
 
 ```bash
 # This command initiates the PPO algorithm-based training for the humanoid task.
-python scripts/train.py --task=x3_zq_amp  --headless --num_envs 4096
-python scripts/play.py --task=x3_zq_amp
-python scripts/play_amp_motions.py --task=x3_zq_amp
+python scripts/train.py --task=e1_amp  --headless --num_envs 4096
+python scripts/play.py --task=e1_amp
+python scripts/play_amp_motion.py --task=e1_amp
 
 ```
 
@@ -71,10 +71,19 @@ Observe the following cases:
 ImportError: libpython3.8.so.1.0: cannot open shared object file: No such file or directory
 # solution
 # set the correct path
-export LD_LIBRARY_PATH="~/miniconda3/envs/your_env/lib:$LD_LIBRARY_PATH" 
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 # OR
 sudo apt install libpython3.8
 ```
+
+
+## 扩展
+1. 导入资产,准备数据集
+2. 编写特定的motionloader
+3. amp_ppo.py里导入新的motionloader
+4. 编写cfg和env文件
+5. init注册任务
+
 
 ## Acknowledgment
 

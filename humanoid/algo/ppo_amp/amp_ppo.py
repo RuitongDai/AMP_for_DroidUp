@@ -16,6 +16,7 @@ from .actor_critic_est import ActorCriticEST
 from .rollout_storage import RolloutStorage
 from .replay_buffer import ReplayBuffer
 from humanoid.algo.utils.motion_loader_x3 import AMPLoader
+from humanoid.algo.utils.motion_loader_e1 import E1AMPLoader
 from humanoid.algo.modules.discriminator import Discriminator
 
 class AmpPPO:
@@ -59,7 +60,12 @@ class AmpPPO:
             self.loss_type = self.amp_cfg["loss_type"]
         print_dict_aligned("amp_cfg", self.amp_cfg)
         # init amp loader
-        self.amp_data = AMPLoader(
+        amp_loader_name = self.amp_cfg.get("amp_loader", "x3")
+        amp_loader_cls = {
+            "x3": AMPLoader,
+            "e1": E1AMPLoader,
+        }[amp_loader_name]
+        self.amp_data = amp_loader_cls(
             self.device,
             time_between_frames= self.amp_cfg["step_dt"],
             preload_transitions=True,
