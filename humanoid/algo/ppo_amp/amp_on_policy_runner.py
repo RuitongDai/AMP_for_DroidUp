@@ -86,7 +86,6 @@ class AmpOnPolicyRunner:
         if self.log_dir is not None and self.writer is None:
             if self.cfg["use_wandb"]:
                 wandb.init(
-                    entity="2741355724-droid",
                     project=self.all_cfg["runner"]["experiment_name"],
                     sync_tensorboard=True,
                     name=self.wandb_run_name,

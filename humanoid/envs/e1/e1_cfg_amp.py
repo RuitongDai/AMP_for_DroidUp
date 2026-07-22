@@ -508,4 +508,4 @@ class E1AMPCfgPPO(LeggedRobotCfgPPO):
         load_run = -1
         checkpoint = -1
         resume_path = None
-        use_wandb = False
+        use_wandb = True
