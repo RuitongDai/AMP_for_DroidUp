@@ -158,16 +158,14 @@ class E1AMPCfg(LeggedRobotCfg):
                      'hip_yaw':   80,
                      'hip_roll':  200,
                      'knee': 200,
-                     'ankle_pitch': 80,
-                     'ankle_roll': 60,
+                     'ankle': 80,
                      'waist': 150,
                      }
         damping = {  'hip_pitch': 5,
                      'hip_yaw': 3,
                      'hip_roll': 5,
                      'knee': 5,
-                     'ankle_pitch': 3,
-                     'ankle_roll': 2,
+                     'ankle': 3,
                      'waist': 4,
                      }
         joint_damping = {
