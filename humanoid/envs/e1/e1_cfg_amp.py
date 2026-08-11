@@ -138,35 +138,37 @@ class E1AMPCfg(LeggedRobotCfg):
     class init_state(LeggedRobotCfg.init_state):
         pos = [0.0, 0.0, 0.675]
         default_joint_angles = {
-           'left_hip_pitch_joint': 0.0,
+           'left_hip_pitch_joint': -0.10,
            'left_hip_roll_joint': 0,
            'left_hip_yaw_joint' : 0.,
-           'left_knee_joint' : 0.0,
-           'left_ankle_pitch_joint' : -0.0,
+           'left_knee_joint' : 0.23,
+           'left_ankle_pitch_joint' : -0.13,
            'left_ankle_roll_joint' : 0,
-           'right_hip_pitch_joint': -0.0,
+           'right_hip_pitch_joint': -0.10,
            'right_hip_roll_joint': 0,
            'right_hip_yaw_joint' : 0.,
-           'right_knee_joint' : 0.0,
-           'right_ankle_pitch_joint': -0.0,
+           'right_knee_joint' : 0.23,
+           'right_ankle_pitch_joint': -0.13,
            'right_ankle_roll_joint' : 0,
            'waist_yaw_joint': 0,
         }
 
     class control(LeggedRobotCfg.control):
-        stiffness = {'hip_pitch': 150,
+        stiffness = {'hip_pitch': 200,
                      'hip_yaw':   80,
-                     'hip_roll':  100,
-                     'knee': 150,
-                     'ankle': 30,
-                     'waist': 100,
+                     'hip_roll':  200,
+                     'knee': 200,
+                     'ankle_pitch': 80,
+                     'ankle_roll': 60,
+                     'waist': 150,
                      }
         damping = {  'hip_pitch': 5,
                      'hip_yaw': 3,
-                     'hip_roll': 3,
+                     'hip_roll': 5,
                      'knee': 5,
-                     'ankle': 2,
-                     'waist': 5,
+                     'ankle_pitch': 3,
+                     'ankle_roll': 2,
+                     'waist': 4,
                      }
         joint_damping = {
             'hip_yaw': 0.1,
