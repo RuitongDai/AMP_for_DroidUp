@@ -39,6 +39,9 @@ from .x3.x3_zq_cfg_amp import X3zqAMPCfg, X3zqAMPCfgPPO
 from .x3.x3_zq_env import X3zqEnv
 from .e1.e1_cfg_amp import E1AMPCfg, E1AMPCfgPPO
 from .e1.e1_env import E1Env
+from .x3_f2.x3_f2_cfg_amp import X3F2AMPCfg, X3F2AMPCfgPPO
+from .x3_f2.x3_f2_env import X3F2Env
 
 task_registry.register("x3_zq_amp", X3zqEnv, X3zqAMPCfg(), X3zqAMPCfgPPO())
 task_registry.register("e1_amp", E1Env, E1AMPCfg(), E1AMPCfgPPO())
+task_registry.register("x3_f2_amp", X3F2Env, X3F2AMPCfg(), X3F2AMPCfgPPO())
