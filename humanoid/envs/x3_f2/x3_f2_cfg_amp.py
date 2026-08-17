@@ -55,7 +55,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
 
     class terrain(LeggedRobotCfg.terrain):
         # mesh_type = 'plane'
-        mesh_type = 'plane'
+        mesh_type = 'trimesh'
         horizontal_scale = 0.1 # [m]
         vertical_scale = 0.005 # [m]
         border_size = 25  # [m]
@@ -85,7 +85,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         discrete_obstacles_height = [0.00, 0.02]
         step_stone = [0.00, 0.05]
         wave_amplitude = [0.05, 0.2]
-        curriculum = False
+        curriculum = True
         terrain_length = 8.
         terrain_width = 8.
         num_rows = 10  # number of terrain rows (levels)
@@ -357,7 +357,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         soft_dof_pos_limit = 0.9
         soft_torque_limit = 0.9
         soft_dof_vel_limit = 0.9
-        close_feet_threshold = 0.20
+        close_feet_threshold = 0.21
 
         class scales:
             # survival = 0.5
@@ -367,7 +367,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
             feet_gait_stance = -1.0
             feet_gait_swing = -2.0
             feet_slide = -0.2
-            # feet_too_near = -2.
+            feet_too_near = -2.
             feet_x_distance = -2.
             # ==================== vel tracking =======================
             tracking_stuck = -0.5
