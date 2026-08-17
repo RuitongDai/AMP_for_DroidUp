@@ -520,8 +520,10 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
             normalizer = True
             # amp_reward_coef = 5.0 * step_dt
             # amp_task_reward_lerp = 0.2
-            amp_reward_coef = 0.4
-            amp_task_reward_lerp = 0.7
+            # amp_reward_coef = 0.4
+            # amp_task_reward_lerp = 0.7
+            amp_reward_coef = 0.2
+            amp_task_reward_lerp = 0.9
             amp_discr_hidden_dims = [512, 256, 128]
             amp_loss_coef = 1.0
             loss_type = "LSGAN" # "LSGAN", "WGAN", "BCEWithLogits"
