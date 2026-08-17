@@ -33,8 +33,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         reference_state_initialization = True
 
         amp_motion_files_display = [
-            f"{F2_MOTION_DIR}/amp2.txt",
-            f"{F2_MOTION_DIR}/amp3.txt",
+            f"{F2_MOTION_DIR}/amp_50hz.txt",
         ]
 
 
@@ -86,7 +85,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         discrete_obstacles_height = [0.00, 0.02]
         step_stone = [0.00, 0.05]
         wave_amplitude = [0.05, 0.2]
-        curriculum = True
+        curriculum = False
         terrain_length = 8.
         terrain_width = 8.
         num_rows = 10  # number of terrain rows (levels)
@@ -509,8 +508,7 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
             amp_loader = "x3"
 
             amp_motion_files = [
-                f"{F2_MOTION_DIR}/amp2.txt",
-                f"{F2_MOTION_DIR}/amp3.txt",
+                f"{F2_MOTION_DIR}/amp_50hz.txt",
             ]
 
 
