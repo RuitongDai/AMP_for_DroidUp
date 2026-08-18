@@ -33,7 +33,17 @@ class X3F2AMPCfg(LeggedRobotCfg):
         reference_state_initialization = True
 
         amp_motion_files_display = [
-            f"{F2_MOTION_DIR}/amp_50hz.txt",
+            f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_l_2_r_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_forward_1.33_1.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_f_s_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_f_8_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_f_2_b_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_back_1.33_1.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_b_s_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_b_8_1.33.bvh_Skeleton0.txt",
         ]
 
 
@@ -340,7 +350,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         target_hip_swing_pos = -0.9  # rad
 
         clock_enable = 1 # 1: 使用[sin、cos]时钟信号,  0: 不使用时钟信号
-        cycle_time = 1.2                   # sec
+        cycle_time = 1.33                # sec
         stand_radio = 0.65
         gait_radio = True
         feet_air_time = 0.6
@@ -367,7 +377,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
             feet_gait_stance = -1.0
             feet_gait_swing = -2.0
             feet_slide = -0.2
-            feet_too_near = -2.
+            # feet_too_near = -2.
             feet_x_distance = -2.
             # ==================== vel tracking =======================
             tracking_stuck = -0.5
@@ -508,7 +518,17 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
             amp_loader = "x3"
 
             amp_motion_files = [
-                f"{F2_MOTION_DIR}/amp_50hz.txt",
+            f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_l_2_r_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_forward_1.33_1.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_f_s_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_f_8_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_f_2_b_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_back_1.33_1.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_b_s_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/walk_b_8_1.33.bvh_Skeleton0.txt",
             ]
 
 
