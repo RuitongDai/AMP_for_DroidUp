@@ -346,8 +346,8 @@ class X3F2AMPCfg(LeggedRobotCfg):
         base_height_target = 0.8 # 0.10 rad
         feet_height = 0.025
         target_feet_height = 0.08    # m
-        target_knee_swing_pos = 0.8  # rad
-        target_hip_swing_pos = -0.9  # rad
+        # target_knee_swing_pos = 0.8  # rad
+        # target_hip_swing_pos = -0.9  # rad
 
         clock_enable = 1 # 1: 使用[sin、cos]时钟信号,  0: 不使用时钟信号
         cycle_time = 1.33                # sec
