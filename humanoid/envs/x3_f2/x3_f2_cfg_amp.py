@@ -393,7 +393,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
             waist_pos = -0.2
             hip_yaw_pos_mask = -2.0
             hip_roll_pos_mask = -2.0
-            knee_pos_swing_v1 = -1.0
+            # knee_pos_swing_v1 = -1.0
             ankle_pitch_pos = -0.2
             ankle_roll_pos = -0.2
             # feet_ori_mask = -0.2
