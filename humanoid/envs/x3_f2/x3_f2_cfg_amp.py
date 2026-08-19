@@ -33,17 +33,18 @@ class X3F2AMPCfg(LeggedRobotCfg):
         reference_state_initialization = True
 
         amp_motion_files_display = [
-            f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_l_2_r_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_forward_1.33_1.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_f_s_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_f_8_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_f_2_b_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_back_1.33_1.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_b_s_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_b_8_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/amp_1.33.txt",
+            # f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_l_2_r_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_forward_1.33_1.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_f_s_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_f_8_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_f_2_b_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_back_1.33_1.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_b_s_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_b_8_1.33.bvh_Skeleton0.txt",
         ]
 
 
@@ -518,17 +519,18 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
             amp_loader = "x3"
 
             amp_motion_files = [
-            f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_l_2_r_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_forward_1.33_1.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_f_s_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_f_8_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_f_2_b_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_back_1.33_1.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_b_s_1.33.bvh_Skeleton0.txt",
-            f"{F2_MOTION_DIR}/walk_b_8_1.33.bvh_Skeleton0.txt",
+            f"{F2_MOTION_DIR}/amp_1.33.txt",
+            # f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_l_2_r_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_forward_1.33_1.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_f_s_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_f_8_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_f_2_b_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_back_1.33_1.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_b_s_1.33.bvh_Skeleton0.txt",
+            # f"{F2_MOTION_DIR}/walk_b_8_1.33.bvh_Skeleton0.txt",
             ]
 
 
