@@ -33,7 +33,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         reference_state_initialization = True
 
         amp_motion_files_display = [
-            f"{F2_MOTION_DIR}/amp_1.33.txt",
+            f"{F2_MOTION_DIR}/amp_1.31.txt",
             # f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
@@ -351,7 +351,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         # target_hip_swing_pos = -0.9  # rad
 
         clock_enable = 1 # 1: 使用[sin、cos]时钟信号,  0: 不使用时钟信号
-        cycle_time = 1.33                # sec
+        cycle_time = 1.31              # sec
         stand_radio = 0.65
         gait_radio = True
         feet_air_time = 0.6
@@ -519,7 +519,7 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
             amp_loader = "x3"
 
             amp_motion_files = [
-            f"{F2_MOTION_DIR}/amp_1.33.txt",
+            f"{F2_MOTION_DIR}/amp_1.31.txt",
             # f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
