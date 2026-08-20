@@ -585,7 +585,7 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
         policy_class_name = 'ActorCriticEST'
         algorithm_class_name = 'AmpPPO'
         num_steps_per_env = 24  # per iteration
-        max_iterations = 20000  # number of policy updates
+        max_iterations = 30000  # number of policy updates
 
         # logging
         save_interval = 500  # check for potential saves every this many iterations
