@@ -33,7 +33,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         reference_state_initialization = True
 
         amp_motion_files_display = [
-            f"{F2_MOTION_DIR}/amp_1.31.txt",
+            f"{F2_MOTION_DIR}/017.txt",
             # f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
@@ -236,7 +236,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         decimation = 4  # 50hz
 
     class asset(LeggedRobotCfg.asset):
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/F2_ZZ1_waiguan/x3_f2_14dof.xml'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/F2_ZZ1_waiguan/x3_f2_14dof.urdf'
         name = "x3_f2"
         foot_name = "ankle_roll"
         knee_name = "knee"
@@ -345,7 +345,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         curriculum_init = 0.3
         penalize_curriculum_sigma = 0.8
         base_height_target = 0.8 # 0.10 rad
-        feet_height = 0.025
+        feet_height = 0.035
         target_feet_height = 0.08    # m
         # target_knee_swing_pos = 0.8  # rad
         # target_hip_swing_pos = -0.9  # rad
@@ -379,7 +379,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
             feet_gait_swing = -2.0
             feet_slide = -0.2
             # feet_too_near = -2.
-            feet_x_distance = -2.
+            feet_x_distance = -4.
             # ==================== vel tracking =======================
             tracking_stuck = -0.5
             tracking_lin_vel = 1.0
@@ -519,7 +519,7 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
             amp_loader = "x3"
 
             amp_motion_files = [
-            f"{F2_MOTION_DIR}/amp_1.31.txt",
+            f"{F2_MOTION_DIR}/017.txt",
             # f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",

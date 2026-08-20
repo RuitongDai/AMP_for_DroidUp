@@ -106,8 +106,8 @@ def play(args):
             mask = torch.ones(env.num_envs, dtype=torch.bool)
             mask[env.lookat_id] = False
             env.commands[mask, 0] = 1.2
-            env.commands[mask, 1] = 0.
-            env.commands[mask, 2] = 0.
+            env.commands[mask, 1] = 0
+            env.commands[mask, 2] = 0.0
             env.commands[mask, 3] = 0.
         env.commands[:, 0] = torch.clip(env.commands[:, 0], env_cfg.commands.ranges.lin_vel_x[0], env_cfg.commands.ranges.lin_vel_x[1])
         env.commands[:, 1] = torch.clip(env.commands[:, 1], env_cfg.commands.ranges.lin_vel_y[0], env_cfg.commands.ranges.lin_vel_y[1])
