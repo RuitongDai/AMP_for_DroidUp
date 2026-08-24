@@ -218,11 +218,40 @@
 <!--        <mesh filename="meshes/left_ankle_roll_link.STL" />-->
 <!--      </geometry>-->
 <!--    </collision>-->
-    <collision><origin xyz=" 0.040   0.000  -0.013"/><geometry><box size="0.21 0.066 0.02"/></geometry></collision>
-    <collision><origin xyz="-0.066   0.034  -0.030"/><geometry><sphere radius="0.006"/></geometry></collision>
-    <collision><origin xyz="-0.066  -0.034  -0.030"/><geometry><sphere radius="0.006"/></geometry></collision>
-    <collision><origin xyz=" 0.150   0.036  -0.030"/><geometry><sphere radius="0.006"/></geometry></collision>
-    <collision><origin xyz=" 0.150  -0.036  -0.030"/><geometry><sphere radius="0.006"/></geometry></collision>
+   <collision name="left_foot1_collision">
+      <origin xyz="0.080 -0.036 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.100"/></geometry>
+    </collision>
+
+    <collision name="left_foot2_collision">
+      <origin xyz="0.045 -0.024 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.200"/></geometry>
+    </collision>
+
+    <collision name="left_foot3_collision">
+      <origin xyz="0.042 -0.012 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.226"/></geometry>
+    </collision>
+
+    <collision name="left_foot4_collision">
+      <origin xyz="0.042 0.000 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.226"/></geometry>
+    </collision>
+
+    <collision name="left_foot5_collision">
+      <origin xyz="0.042 0.012 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.226"/></geometry>
+    </collision>
+
+    <collision name="left_foot6_collision">
+      <origin xyz="0.045 0.024 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.200"/></geometry>
+    </collision>
+
+    <collision name="left_foot7_collision">
+      <origin xyz="0.080 0.036 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.100"/></geometry>
+    </collision>
   </link>
   <joint name="left_ankle_roll_joint" type="revolute">
     <origin xyz="0 0 -0.058" rpy="0 0 0" />
@@ -464,11 +493,40 @@
 <!--        <mesh filename="meshes/right_ankle_roll_link.STL" />-->
 <!--      </geometry>-->
 <!--    </collision>-->
-    <collision><origin xyz=" 0.040   0.000  -0.013"/><geometry><box size="0.21 0.066 0.02"/></geometry></collision>
-    <collision><origin xyz="-0.066   0.034  -0.030"/><geometry><sphere radius="0.006"/></geometry></collision>
-    <collision><origin xyz="-0.066  -0.034  -0.030"/><geometry><sphere radius="0.006"/></geometry></collision>
-    <collision><origin xyz=" 0.150   0.036  -0.030"/><geometry><sphere radius="0.006"/></geometry></collision>
-    <collision><origin xyz=" 0.150  -0.036  -0.030"/><geometry><sphere radius="0.006"/></geometry></collision>
+    <collision name="right_foot1_collision">
+      <origin xyz="0.080 -0.036 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.100"/></geometry>
+    </collision>
+
+    <collision name="right_foot2_collision">
+      <origin xyz="0.045 -0.024 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.200"/></geometry>
+    </collision>
+
+    <collision name="right_foot3_collision">
+      <origin xyz="0.042 -0.012 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.226"/></geometry>
+    </collision>
+
+    <collision name="right_foot4_collision">
+      <origin xyz="0.042 0.000 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.226"/></geometry>
+    </collision>
+
+    <collision name="right_foot5_collision">
+      <origin xyz="0.042 0.012 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.226"/></geometry>
+    </collision>
+
+    <collision name="right_foot6_collision">
+      <origin xyz="0.045 0.024 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.200"/></geometry>
+    </collision>
+
+    <collision name="right_foot7_collision">
+      <origin xyz="0.080 0.036 -0.026" rpy="0 1.5707963 0"/>
+      <geometry><capsule radius="0.01" length="0.100"/></geometry>
+    </collision>
   </link>
   <joint name="right_ankle_roll_joint" type="revolute">
     <origin xyz="0 0 -0.058" rpy="0 0 0" />

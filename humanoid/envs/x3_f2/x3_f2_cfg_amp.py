@@ -65,8 +65,8 @@ class X3F2AMPCfg(LeggedRobotCfg):
         height_idx = feet_height_idx + Feet_height_obs_dim  # 45+42 : 45+42+121
 
     class terrain(LeggedRobotCfg.terrain):
-        # mesh_type = 'plane'
-        mesh_type = 'trimesh'
+        # mesh_type = 'trimesh'
+        mesh_type = 'plane'
         horizontal_scale = 0.1 # [m]
         vertical_scale = 0.005 # [m]
         border_size = 25  # [m]
@@ -236,7 +236,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         decimation = 4  # 50hz
 
     class asset(LeggedRobotCfg.asset):
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/f2/xmls/f1_1_no_hand.xml'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/F2_ZZ1_waiguan/x3_f2_14dof.xml'
         name = "x3_f2"
         foot_name = "ankle_roll"
         knee_name = "knee"
@@ -253,7 +253,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
 
     class domain_rand:
         # 瞬时扰动
-        push_robots = True
+        push_robots = False
         push_interval_s = 7.
         max_push_vel_xy = 1.5
         max_push_ang_vel = 0.0
@@ -264,49 +264,49 @@ class X3F2AMPCfg(LeggedRobotCfg):
         max_small_push_ang_vel = 0.2
 
         # 持续推力
-        apply_force_torque = True
+        apply_force_torque = False
         apply_interval_s = 7.
         max_apply_force = 2.0
         max_apply_torque = 0.0
 
         # 摩擦系数
-        randomize_friction = True
+        randomize_friction = False
         num_buckets = 256
-        friction_range = [-0.1, 1.0]
+        friction_range = [0.6, 1.0]
         # 恢复系数
         randomize_restitution = False
         restitution_range = [0., 1.0]
         # base质量
-        randomize_base_mass = True
+        randomize_base_mass = False
         randomize_mass_body_name = "torso_link" # "pelvis" "torso_link"
         added_base_mass_range = [-2., 6.]
         # base质心
-        randomize_base_com = True
+        randomize_base_com = False
         randomize_com_body_name = "torso_link"
         added_base_com_range = [[-0.02, 0.02],
                                 [-0.02, 0.02],
                                 [-0.02, 0.02]]
         # 其他link质量
-        randomize_link_mass = True
+        randomize_link_mass = False
         multiplied_link_mass_range = [0.9, 1.1]
         # 其他link质心
-        randomize_link_com = True
+        randomize_link_com = False
         added_link_com_range = [-0.01, 0.01]
         # 惯量
-        randomize_inertia = True
+        randomize_inertia = False
         multiplied_inertia_range = [0.9, 1.1]
         # PD刚度阻尼
-        randomize_pd_factor = True
+        randomize_pd_factor = False
         Kp_factor_range = [0.8, 1.2]
         Kd_factor_range = [0.8, 1.2]
         # torque
-        randomize_motor_strength = True
+        randomize_motor_strength = False
         motor_strength_range = [0.8, 1.2]
         # dof offset
-        randomize_motor_offset = True
+        randomize_motor_offset = False
         motor_offset_range = [-0.02, 0.02]
         # joint 阻尼
-        randomize_joint_damping = True
+        randomize_joint_damping = False
         damping_operation = "abs"        # ["scale", "abs"]
         joint_damping_range = [0.05, 0.1]
         # joint 静摩擦
@@ -314,11 +314,11 @@ class X3F2AMPCfg(LeggedRobotCfg):
         friction_operation = "abs"  # ["scale", "abs"]
         joint_friction_range = [0.001, 0.005]
         # 电枢惯量
-        randomize_joint_armature = True
+        randomize_joint_armature = False
         armature_operation = "abs"  # ["scale", "abs"]
         joint_armature_range = [0.005, 0.01]
         # action延迟
-        add_cmd_action_latency = True
+        add_cmd_action_latency = False
         randomize_cmd_action_latency = True
         range_cmd_action_latency = [0, 2] # [0 - 2*5] ms
         # action噪声
@@ -507,7 +507,7 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
         lam = 0.95
         max_grad_norm = 1.0
         # -- training
-        learning_rate = 0.001
+        learning_rate = 0.0003
         num_learning_epochs =  5
         num_mini_batches = 4  # mini batch size = num_envs * num_steps / num_mini_batches
         schedule = 'adaptive'  # adaptive, fixed
