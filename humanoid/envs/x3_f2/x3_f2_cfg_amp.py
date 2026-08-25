@@ -33,7 +33,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
         reference_state_initialization = True
 
         amp_motion_files_display = [
-            f"{F2_MOTION_DIR}/017.txt",
+            f"{F2_MOTION_DIR}/motion_f2.txt",
             # f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
@@ -253,7 +253,7 @@ class X3F2AMPCfg(LeggedRobotCfg):
 
     class domain_rand:
         # 瞬时扰动
-        push_robots = False
+        push_robots = True
         push_interval_s = 7.
         max_push_vel_xy = 1.5
         max_push_ang_vel = 0.0
@@ -264,49 +264,49 @@ class X3F2AMPCfg(LeggedRobotCfg):
         max_small_push_ang_vel = 0.2
 
         # 持续推力
-        apply_force_torque = False
+        apply_force_torque = True
         apply_interval_s = 7.
         max_apply_force = 2.0
         max_apply_torque = 0.0
 
         # 摩擦系数
-        randomize_friction = False
+        randomize_friction = True
         num_buckets = 256
         friction_range = [0.6, 1.0]
         # 恢复系数
         randomize_restitution = False
         restitution_range = [0., 1.0]
         # base质量
-        randomize_base_mass = False
+        randomize_base_mass = True
         randomize_mass_body_name = "torso_link" # "pelvis" "torso_link"
         added_base_mass_range = [-2., 6.]
         # base质心
-        randomize_base_com = False
+        randomize_base_com = True
         randomize_com_body_name = "torso_link"
         added_base_com_range = [[-0.02, 0.02],
                                 [-0.02, 0.02],
                                 [-0.02, 0.02]]
         # 其他link质量
-        randomize_link_mass = False
+        randomize_link_mass = True
         multiplied_link_mass_range = [0.9, 1.1]
         # 其他link质心
-        randomize_link_com = False
+        randomize_link_com = True
         added_link_com_range = [-0.01, 0.01]
         # 惯量
-        randomize_inertia = False
+        randomize_inertia = True
         multiplied_inertia_range = [0.9, 1.1]
         # PD刚度阻尼
-        randomize_pd_factor = False
+        randomize_pd_factor = True
         Kp_factor_range = [0.8, 1.2]
         Kd_factor_range = [0.8, 1.2]
         # torque
-        randomize_motor_strength = False
+        randomize_motor_strength = True
         motor_strength_range = [0.8, 1.2]
         # dof offset
-        randomize_motor_offset = False
+        randomize_motor_offset = True
         motor_offset_range = [-0.02, 0.02]
         # joint 阻尼
-        randomize_joint_damping = False
+        randomize_joint_damping = True
         damping_operation = "abs"        # ["scale", "abs"]
         joint_damping_range = [0.05, 0.1]
         # joint 静摩擦
@@ -314,11 +314,11 @@ class X3F2AMPCfg(LeggedRobotCfg):
         friction_operation = "abs"  # ["scale", "abs"]
         joint_friction_range = [0.001, 0.005]
         # 电枢惯量
-        randomize_joint_armature = False
+        randomize_joint_armature = True
         armature_operation = "abs"  # ["scale", "abs"]
         joint_armature_range = [0.005, 0.01]
         # action延迟
-        add_cmd_action_latency = False
+        add_cmd_action_latency = True
         randomize_cmd_action_latency = True
         range_cmd_action_latency = [0, 2] # [0 - 2*5] ms
         # action噪声
@@ -344,14 +344,14 @@ class X3F2AMPCfg(LeggedRobotCfg):
         penalize_curriculum = False
         curriculum_init = 0.3
         penalize_curriculum_sigma = 0.8
-        base_height_target = 0.8 # 0.10 rad
+        base_height_target = 0.85 # 0.10 rad
         feet_height = 0.035
-        target_feet_height = 0.08    # m
+        target_feet_height = 0.09    # m
         # target_knee_swing_pos = 0.8  # rad
         # target_hip_swing_pos = -0.9  # rad
 
-        clock_enable = 1 # 1: 使用[sin、cos]时钟信号,  0: 不使用时钟信号
-        cycle_time = 1.31              # sec
+        clock_enable = 1 # 1: 使用[sin、cos]时钟信号,  0: 不使用5时钟信号
+        cycle_time = 1.2              # sec
         stand_radio = 0.65
         gait_radio = True
         feet_air_time = 0.6
@@ -507,7 +507,7 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
         lam = 0.95
         max_grad_norm = 1.0
         # -- training
-        learning_rate = 0.0003
+        learning_rate = 0.001
         num_learning_epochs =  5
         num_mini_batches = 4  # mini batch size = num_envs * num_steps / num_mini_batches
         schedule = 'adaptive'  # adaptive, fixed
@@ -519,7 +519,7 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
             amp_loader = "x3"
 
             amp_motion_files = [
-            f"{F2_MOTION_DIR}/017.txt",
+            f"{F2_MOTION_DIR}/motion_f2.txt",
             # f"{F2_MOTION_DIR}/walk_turn_left_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_turn_1.33.bvh_Skeleton0.txt",
             # f"{F2_MOTION_DIR}/walk_side_1.33.bvh_Skeleton0.txt",
@@ -585,7 +585,7 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
         policy_class_name = 'ActorCriticEST'
         algorithm_class_name = 'AmpPPO'
         num_steps_per_env = 24  # per iteration
-        max_iterations = 30000  # number of policy updates
+        max_iterations = 20000  # number of policy updates
 
         # logging
         save_interval = 500  # check for potential saves every this many iterations
