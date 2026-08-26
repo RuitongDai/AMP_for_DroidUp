@@ -18,8 +18,8 @@ def play(args):
     env_cfg.commands.gait_enable = False
     env_cfg.commands.heading_command = False
     env_cfg.commands.resampling_time = 6000
-    env_cfg.terrain.mesh_type = 'trimesh'
-    # env_cfg.terrain.mesh_type = 'plane'
+    # env_cfg.terrain.mesh_type = 'trimesh'
+    env_cfg.terrain.mesh_type = 'plane'
     env_cfg.terrain.border_size = 5
     env_cfg.terrain.num_rows = 5 # level
     env_cfg.terrain.num_cols = 5 # type
