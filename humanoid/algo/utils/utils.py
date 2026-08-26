@@ -240,38 +240,44 @@ def print_dict_aligned(title: str, d: dict, indent: int = 2, width: int = 75):
         else:
             print(f"{key_str}{v}")
 
-_EPS = np.finfo(float).eps * 4.0
 def quaternion_slerp(q0, q1, fraction, spin=0, shortestpath=True):
-    """Batch quaternion spherical linear interpolation."""
+    """Numerically stable batched quaternion spherical interpolation.
 
-    out = torch.zeros_like(q0)
+    Quaternion ordering does not affect SLERP as long as both inputs use the
+    same ordering. The implementation avoids in-place mutation, clamps the dot
+    product before ``acos`` and uses the correct ``sin(theta)`` denominator.
+    """
 
-    zero_mask = torch.isclose(fraction, torch.zeros_like(fraction)).squeeze()
-    ones_mask = torch.isclose(fraction, torch.ones_like(fraction)).squeeze()
-    out[zero_mask] = q0[zero_mask]
-    out[ones_mask] = q1[ones_mask]
+    eps = torch.finfo(q0.dtype).eps
+    q0 = q0 / torch.linalg.vector_norm(q0, dim=-1, keepdim=True).clamp_min(eps)
+    q1 = q1 / torch.linalg.vector_norm(q1, dim=-1, keepdim=True).clamp_min(eps)
 
-    d = torch.sum(q0 * q1, dim=-1, keepdim=True)
-    dist_mask = (torch.abs(torch.abs(d) - 1.0) < _EPS).squeeze()
-    out[dist_mask] = q0[dist_mask]
+    fraction = torch.as_tensor(fraction, dtype=q0.dtype, device=q0.device)
+    while fraction.ndim < q0.ndim:
+        fraction = fraction.unsqueeze(-1)
 
+    dot = torch.sum(q0 * q1, dim=-1, keepdim=True)
     if shortestpath:
-        d_old = torch.clone(d)
-        d = torch.where(d_old < 0, -d, d)
-        q1 = torch.where(d_old < 0, -q1, q1)
+        flip = dot < 0.0
+        q1 = torch.where(flip, -q1, q1)
+        dot = torch.where(flip, -dot, dot)
 
-    angle = torch.acos(d) + spin * torch.pi
-    angle_mask = (torch.abs(angle) < _EPS).squeeze()
-    out[angle_mask] = q0[angle_mask]
+    # Round-off from float32 unit quaternions can put dot slightly outside the
+    # domain of acos. This was the source of NaNs in interpolated AMP frames.
+    dot = dot.clamp(-1.0, 1.0)
+    theta = torch.acos(dot) + spin * torch.pi
+    sin_theta = torch.sin(theta)
 
-    final_mask = torch.logical_or(zero_mask, ones_mask)
-    final_mask = torch.logical_or(final_mask, dist_mask)
-    final_mask = torch.logical_or(final_mask, angle_mask)
-    final_mask = torch.logical_not(final_mask)
+    # For nearly identical rotations, normalized linear interpolation is both
+    # stable and equivalent to SLERP in the limit.
+    linear_mask = torch.abs(sin_theta) <= 16.0 * eps
+    linear = (1.0 - fraction) * q0 + fraction * q1
 
-    isin = 1.0 / angle
-    q0 *= torch.sin((1.0 - fraction) * angle) * isin
-    q1 *= torch.sin(fraction * angle) * isin
-    q0 += q1
-    out[final_mask] = q0[final_mask]
-    return out
+    denom = torch.where(linear_mask, torch.ones_like(sin_theta), sin_theta)
+    spherical = (
+        torch.sin((1.0 - fraction) * theta) / denom * q0
+        + torch.sin(fraction * theta) / denom * q1
+    )
+
+    out = torch.where(linear_mask, linear, spherical)
+    return out / torch.linalg.vector_norm(out, dim=-1, keepdim=True).clamp_min(eps)

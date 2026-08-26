@@ -507,12 +507,14 @@ class X3F2AMPCfgPPO(LeggedRobotCfgPPO):
         lam = 0.95
         max_grad_norm = 1.0
         # -- training
-        learning_rate = 0.001
+        learning_rate = 0.0003
         num_learning_epochs =  5
         num_mini_batches = 4  # mini batch size = num_envs * num_steps / num_mini_batches
-        schedule = 'adaptive'  # adaptive, fixed
-        learning_rate_print = False
-        amp_enable = True # 混合精度训练
+        schedule = 'fixed'  # adaptive, fixed
+        learning_rate_print = True
+        # First establish a numerically stable FP32 baseline. This switch only
+        # disables mixed precision; it does not disable the AMP discriminator.
+        amp_enable = False
         # -- Amp cfg
         class amp_cfg:
             step_dt = 0.02

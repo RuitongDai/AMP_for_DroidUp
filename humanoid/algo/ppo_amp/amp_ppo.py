@@ -72,7 +72,11 @@ class AmpPPO:
             num_preload_transitions=self.amp_cfg["amp_num_preload_transitions"],
             motion_files=self.amp_cfg["amp_motion_files"],
         )
-        self.amp_normalizer = Normalizer(self.amp_data.observation_dim)
+        self.amp_normalizer = (
+            Normalizer(self.amp_data.observation_dim)
+            if self.amp_cfg.get("normalizer", True)
+            else None
+        )
         # init discriminator
         self.discriminator = Discriminator(
             self.amp_data.observation_dim * 2,
@@ -117,9 +121,10 @@ class AmpPPO:
         self.learning_rate = learning_rate
         self.learning_rate_print = learning_rate_print
 
-        # For AMP Loss scaler
-        self.scaler = torch.amp.GradScaler(device=self.device, enabled=True)
+        # Mixed precision is optional. Keep the scaler state consistent with
+        # the actual autocast setting so the FP32 fallback is a true fallback.
         self.amp_enable = amp_enable
+        self.scaler = torch.amp.GradScaler(device=self.device, enabled=self.amp_enable)
         # Loss\Symmetry cfg
         self.symmetry = symmetry_cfg
         self.priv_est = priv_est_cfg
@@ -293,8 +298,11 @@ class AmpPPO:
                             elif self.desired_kl / 2.0 > kl_mean > 0.0:
                                 self.learning_rate = min(1e-2, self.learning_rate * 1.5)
 
+                            # KL adaptation belongs to PPO. Do not also drive
+                            # the discriminator learning rate to the PPO cap.
                             for param_group in self.optimizer.param_groups:
-                                param_group['lr'] = self.learning_rate
+                                if param_group.get("name") == "policy":
+                                    param_group['lr'] = self.learning_rate
 
                 # Surrogate loss
                 ratio = torch.exp(actions_log_prob_batch - torch.squeeze(old_actions_log_prob_batch))
@@ -314,31 +322,55 @@ class AmpPPO:
                 loss = surrogate_loss + self.value_loss_coef * value_loss - self.entropy_coef * entropy_batch.mean()
 
                 # Discriminator loss.
-                policy_state, policy_next_state = sample_amp_policy
-                expert_state, expert_next_state = sample_amp_expert
+                policy_state_raw, policy_next_state_raw = sample_amp_policy
+                expert_state_raw, expert_next_state_raw = sample_amp_expert
+
+                policy_state = policy_state_raw
+                policy_next_state = policy_next_state_raw
+                expert_state = expert_state_raw
+                expert_next_state = expert_next_state_raw
                 if self.amp_normalizer is not None:
                     with torch.no_grad():
-                        policy_state = self.amp_normalizer.normalize_torch(policy_state, self.device)
-                        policy_next_state = self.amp_normalizer.normalize_torch(policy_next_state, self.device)
-                        expert_state = self.amp_normalizer.normalize_torch(expert_state, self.device)
-                        expert_next_state = self.amp_normalizer.normalize_torch(expert_next_state, self.device)
-                policy_d = self.discriminator(torch.cat([policy_state, policy_next_state], dim=-1))
-                expert_d = self.discriminator(torch.cat([expert_state, expert_next_state], dim=-1))
-                if self.loss_type == "LSGAN":
-                    expert_loss = torch.nn.MSELoss()(expert_d, torch.ones(expert_d.size(), device=self.device))
-                    policy_loss = torch.nn.MSELoss()(policy_d, -1 * torch.ones(policy_d.size(), device=self.device))
-                    amp_loss = 0.5 * (expert_loss + policy_loss)
-                elif self.loss_type == "WGAN":
-                    _policy_d = torch.tanh(self.discriminator.eta_wgan * policy_d)
-                    _expert_d = torch.tanh(self.discriminator.eta_wgan * expert_d)
-                    amp_loss = _policy_d.mean() - _expert_d.mean()
-                elif self.loss_type == "BCEWithLogits":
-                    loss_fun = torch.nn.BCEWithLogitsLoss()
-                    expert_loss = loss_fun(expert_d, torch.ones_like(expert_d))
-                    policy_loss = loss_fun(policy_d, torch.zeros_like(policy_d))
-                    amp_loss = 0.5 * (expert_loss + policy_loss)
+                        policy_state = self.amp_normalizer.normalize_torch(policy_state_raw, self.device)
+                        policy_next_state = self.amp_normalizer.normalize_torch(policy_next_state_raw, self.device)
+                        expert_state = self.amp_normalizer.normalize_torch(expert_state_raw, self.device)
+                        expert_next_state = self.amp_normalizer.normalize_torch(expert_next_state_raw, self.device)
 
-                grad_pen_loss = self.discriminator.compute_grad_pen(*sample_amp_expert, *sample_amp_policy, lambda_=10)
+                # The discriminator and its second-order gradient penalty are
+                # substantially more sensitive to FP16 overflow than PPO.
+                # Always evaluate this branch in FP32, even when PPO autocast
+                # is enabled later for performance.
+                with torch.amp.autocast(device_type=self.device, enabled=False):
+                    policy_state = policy_state.float()
+                    policy_next_state = policy_next_state.float()
+                    expert_state = expert_state.float()
+                    expert_next_state = expert_next_state.float()
+
+                    policy_d = self.discriminator(torch.cat([policy_state, policy_next_state], dim=-1))
+                    expert_d = self.discriminator(torch.cat([expert_state, expert_next_state], dim=-1))
+                    if self.loss_type == "LSGAN":
+                        expert_loss = torch.nn.MSELoss()(expert_d, torch.ones_like(expert_d))
+                        policy_loss = torch.nn.MSELoss()(policy_d, -torch.ones_like(policy_d))
+                        amp_loss = 0.5 * (expert_loss + policy_loss)
+                    elif self.loss_type == "WGAN":
+                        _policy_d = torch.tanh(self.discriminator.eta_wgan * policy_d)
+                        _expert_d = torch.tanh(self.discriminator.eta_wgan * expert_d)
+                        amp_loss = _policy_d.mean() - _expert_d.mean()
+                    elif self.loss_type == "BCEWithLogits":
+                        loss_fun = torch.nn.BCEWithLogitsLoss()
+                        expert_loss = loss_fun(expert_d, torch.ones_like(expert_d))
+                        policy_loss = loss_fun(policy_d, torch.zeros_like(policy_d))
+                        amp_loss = 0.5 * (expert_loss + policy_loss)
+
+                    # Use the same normalized coordinate/scale convention for
+                    # both discriminator classification and gradient penalty.
+                    grad_pen_loss = self.discriminator.compute_grad_pen(
+                        expert_state,
+                        expert_next_state,
+                        policy_state,
+                        policy_next_state,
+                        lambda_=10,
+                    )
                 loss += self.amp_loss_coef * amp_loss + self.amp_loss_coef * grad_pen_loss
 
                 # Symmetry loss
@@ -391,17 +423,30 @@ class AmpPPO:
                     # gradient clipping with scaler
                     scaler.unscale_(self.optimizer)
                     nn.utils.clip_grad_norm_(self.actor_critic.parameters(), self.max_grad_norm)
+                    nn.utils.clip_grad_norm_(self.discriminator.parameters(), self.max_grad_norm)
                     scaler.step(self.optimizer)
                     scaler.update()
                 else:
                     self.optimizer.zero_grad()
                     loss.backward()
                     nn.utils.clip_grad_norm_(self.actor_critic.parameters(), self.max_grad_norm)
+                    nn.utils.clip_grad_norm_(self.discriminator.parameters(), self.max_grad_norm)
                     self.optimizer.step()
 
                 if self.amp_normalizer is not None:
-                    self.amp_normalizer.update(policy_state.cpu().numpy())
-                    self.amp_normalizer.update(expert_state.cpu().numpy())
+                    # Update running statistics from raw observations. Updating
+                    # them from already-normalized tensors recursively changes
+                    # the statistics and can eventually poison AMP rewards.
+                    normalizer_batch = torch.cat(
+                        (
+                            policy_state_raw,
+                            policy_next_state_raw,
+                            expert_state_raw,
+                            expert_next_state_raw,
+                        ),
+                        dim=0,
+                    )
+                    self.amp_normalizer.update(normalizer_batch.detach().cpu().numpy())
 
                 # Store the losses
                 mean_value_loss += value_loss.item()
