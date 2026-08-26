@@ -322,28 +322,81 @@ class AMPLoader:
         s = self.preloaded_s[0, AMPLoader.JOINT_POSE_START_IDX: AMPLoader.JOINT_VEL_END_IDX]
         return s.shape[0] - 6  # 减去6维
 
-    def feed_forward_generator(self, num_mini_batch, mini_batch_size):
-        """生成AMP转移数据的小批次。
+    def _build_amp_observation(self, full_frames):
+        """从完整 motion frame 构造与策略侧一致的 AMP 观测。
 
-        参数:
-            num_mini_batch: 小批次数量
-            mini_batch_size: 每个小批次的大小
-
-        产生:
-            (s, s_next): 当前状态和下一时刻状态的元组
+        motion 文件中的根线速度和根角速度是世界坐标系；
+        AMP 策略侧使用机体局部坐标系，因此只在这里转换。
         """
+
+        # 根姿态，格式为 Isaac Gym 使用的 xyzw
+        root_quat = AMPLoader.get_root_rot_batch(full_frames)
+
+        # 防御性归一化，quat_rotate_inverse 要求单位四元数
+        quat_norm = torch.linalg.vector_norm(
+            root_quat,
+            dim=-1,
+            keepdim=True,
+        ).clamp_min(1e-8)
+
+        root_quat = root_quat / quat_norm
+
+        # 关节状态不涉及世界系/机体系转换
+        joint_pos = AMPLoader.get_joint_pose_batch(full_frames)
+        joint_vel = AMPLoader.get_joint_vel_batch(full_frames)
+
+        # motion 文件中保存的是世界坐标系速度
+        root_lin_vel_world = AMPLoader.get_linear_vel_batch(
+            full_frames
+        )
+        root_ang_vel_world = AMPLoader.get_angular_vel_batch(
+            full_frames
+        )
+
+        # 世界坐标系 → 机体局部坐标系
+        root_lin_vel_body = quat_rotate_inverse(
+            root_quat,
+            root_lin_vel_world,
+        )
+
+        root_ang_vel_body = quat_rotate_inverse(
+            root_quat,
+            root_ang_vel_world,
+        )
+
+        # 必须和 x3_f2_env.py 的策略侧 AMP 顺序完全相同
+        return torch.cat(
+            (
+                joint_pos,  # 14
+                root_lin_vel_body,  # 3
+                root_ang_vel_body,  # 3
+                joint_vel,  # 14
+            ),
+            dim=-1,
+        )
+
+    def feed_forward_generator(
+            self,
+            num_mini_batch,
+            mini_batch_size,
+    ):
+        """生成坐标系对齐后的专家 AMP transition。"""
+
         for _ in range(num_mini_batch):
-            idxs = np.random.choice(self.preloaded_s.shape[0], size=mini_batch_size)
-            # 从预加载的转移数据中提取关节位置和速度信息
+            idxs = np.random.choice(
+                self.preloaded_s.shape[0],
+                size=mini_batch_size,
+            )
 
-            # 提取关节位置
-            s = self.preloaded_s[idxs, AMPLoader.JOINT_POSE_START_IDX:AMPLoader.JOINT_POSE_END_IDX]
-            # 拼接线速度、角速度和关节速度
-            s = torch.cat([s, self.preloaded_s[idxs, AMPLoader.LINEAR_VEL_START_IDX : AMPLoader.JOINT_VEL_END_IDX]], dim=-1)
+            # 完整 motion frame，里面仍保存世界系根速度
+            full_frames = self.preloaded_s[idxs]
+            full_frames_next = self.preloaded_s_next[idxs]
 
-            # 下一时刻的状态
-            s_next = self.preloaded_s_next[idxs, AMPLoader.JOINT_POSE_START_IDX:AMPLoader.JOINT_POSE_END_IDX]
-            s_next = torch.cat([s_next, self.preloaded_s_next[idxs, AMPLoader.LINEAR_VEL_START_IDX : AMPLoader.JOINT_VEL_END_IDX]], dim=-1)
+            # 只在构造 AMP 观测时转换为机体系
+            s = self._build_amp_observation(full_frames)
+            s_next = self._build_amp_observation(
+                full_frames_next
+            )
 
             yield s, s_next
 
