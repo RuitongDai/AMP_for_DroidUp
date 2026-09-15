@@ -33,12 +33,7 @@ F2_DATASET_DIR = os.path.join(
     "f2",
 )
 F2_MOTION_FILES = [
-    os.path.join(F2_DATASET_DIR, "walk_forward_12s_100hz.txt"),
-    os.path.join(F2_DATASET_DIR, "walk_back_12s_100hz.txt"),
-    os.path.join(F2_DATASET_DIR, "walk_circle_left_12s_100hz.txt"),
-    os.path.join(F2_DATASET_DIR, "walk_circle_right_12s_100hz.txt"),
-    os.path.join(F2_DATASET_DIR, "walk_turn_120.txt"),
-    os.path.join(F2_DATASET_DIR, "walk_side_120.txt"),
+    os.path.join(F2_DATASET_DIR, "bufa100.txt"),
 ]
 
 class F2AMPCfg(LeggedRobotCfg):
@@ -331,8 +326,8 @@ class F2AMPCfg(LeggedRobotCfg):
         base_height_target = 0.8 # 0.10 rad
         feet_height = 0.025
         target_feet_height = 0.08    # m
-        target_knee_swing_pos = 0.8  # rad
-        target_hip_swing_pos = -0.9  # rad
+        # target_knee_swing_pos = 0.8  # rad
+        # target_hip_swing_pos = -0.9  # rad
 
         clock_enable = 1 # 1: 使用[sin、cos]时钟信号,  0: 不使用时钟信号
         cycle_time = 1.2                   # sec
@@ -378,7 +373,7 @@ class F2AMPCfg(LeggedRobotCfg):
             waist_pos = -0.2
             hip_yaw_pos_mask = -2.0
             hip_roll_pos_mask = -2.0
-            knee_pos_swing_v1 = -1.0
+            # knee_pos_swing_v1 = -1.0
             ankle_pitch_pos = -0.2
             ankle_roll_pos = -0.2
             # feet_ori_mask = -0.2

@@ -43,7 +43,22 @@ F2_JOINT_NAMES = (
     "waist_roll_joint",
 )
 
-F2_JOINT_BODY_NAMES = tuple(name[:-6] + "_link" for name in F2_JOINT_NAMES)
+F2_JOINT_BODY_NAMES = (
+    "left_hip_pitch_link",
+    "left_hip_roll_link",
+    "left_hip_yaw_link",
+    "left_knee_link",
+    "left_ankle_pitch_link",
+    "left_ankle_roll_link",
+    "right_hip_pitch_link",
+    "right_hip_roll_link",
+    "right_hip_yaw_link",
+    "right_knee_link",
+    "right_ankle_pitch_link",
+    "right_ankle_roll_link",
+    "waist_yaw_link",
+    "torso_link",
+)
 F2_NUM_JOINTS = len(F2_JOINT_NAMES)
 AMP_FRAME_SIZE = 47
 
