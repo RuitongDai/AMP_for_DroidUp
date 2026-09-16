@@ -154,8 +154,8 @@ class F2AMPCfg(LeggedRobotCfg):
            'right_knee_joint' : 0.20,
            'right_ankle_pitch_joint': -0.10,
            'right_ankle_roll_joint' : 0,
-           'waist_roll_joint': 0,
            'waist_yaw_joint': 0,
+           'waist_roll_joint': 0,
         }
 
     class control(LeggedRobotCfg.control):
@@ -504,7 +504,7 @@ class F2AMPCfgPPO(LeggedRobotCfgPPO):
             normalizer = True
             # amp_reward_coef = 5.0 * step_dt
             # amp_task_reward_lerp = 0.2
-            amp_reward_coef = 0.4
+            amp_reward_coef = 0.1
             amp_task_reward_lerp = 0.7
             amp_discr_hidden_dims = [512, 256, 128]
             amp_loss_coef = 1.0
