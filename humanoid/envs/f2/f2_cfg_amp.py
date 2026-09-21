@@ -378,7 +378,7 @@ class F2AMPCfg(LeggedRobotCfg):
             ankle_roll_pos = -0.2
             # feet_ori_mask = -0.2
             #======================== energy ============================
-            feet_contact_forces = -0.01
+            feet_contact_forces = -0.05
             action_rate = -0.01
             action_smoothness = -0.01
             dof_torque = -1e-5
