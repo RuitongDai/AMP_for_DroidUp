@@ -71,7 +71,7 @@ Observe the following cases:
 ImportError: libpython3.8.so.1.0: cannot open shared object file: No such file or directory
 # solution
 # set the correct path
-export LD_LIBRARY_PATH="~/miniconda3/envs/your_env/lib:$LD_LIBRARY_PATH" 
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
 # OR
 sudo apt install libpython3.8
 ```

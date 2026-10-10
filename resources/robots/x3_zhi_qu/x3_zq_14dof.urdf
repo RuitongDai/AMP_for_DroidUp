@@ -1,6 +1,6 @@
 <robot name="x03_ZhiQu">
   <mujoco>
-    <compiler meshdir="./meshes" discardvisual="false" />
+    <compiler meshdir="" discardvisual="false" />
   </mujoco>
 <!-- <link name="world"> </link>-->
 <!-- <joint name="floating_base_joint" type="floating">-->
