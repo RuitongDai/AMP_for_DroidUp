@@ -36,7 +36,7 @@ F4_DATASET_DIR = os.path.join(
     "f4",
 )
 F4_MOTION_FILES = [
-    os.path.join(F4_DATASET_DIR, "017.txt"),
+    os.path.join(F4_DATASET_DIR, "017_modify.txt"),
 ]
 class X3F4AMPCfg(LeggedRobotCfg):
     """
