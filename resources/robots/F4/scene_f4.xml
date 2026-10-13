@@ -1,5 +1,5 @@
 <mujoco model="scene_f4">
-  <include file="f4_inertia_v2.xml"/>
+  <include file="f4.xml"/>
   <option timestep="0.005"/>
   <worldbody>
     <light pos="1 0 3.5" dir="0 0 -1" directional="true"/>

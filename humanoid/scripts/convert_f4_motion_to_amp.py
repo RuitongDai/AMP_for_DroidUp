@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert GMR F2 motion data to the 47-column AMP motion format.
+"""Convert GMR F4 motion data to the 47-column AMP motion format.
 
 Accepted inputs:
 
@@ -10,7 +10,7 @@ Accepted inputs:
 The output is a JSON document (normally named ``*.txt``) consumed by
 ``humanoid.algo.utils.motion_loader_x3.AMPLoader``.  Root velocities and
 foot positions are expressed in the root/base frame, matching
-``F2Env.get_amp_obs_for_expert_trans``.
+``X3F4Env.get_amp_obs_for_expert_trans``.
 """
 
 from __future__ import annotations
@@ -19,6 +19,8 @@ import argparse
 import json
 import pickle
 import sys
+import tempfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
@@ -218,7 +220,7 @@ def load_input(path: Path, input_fps: Optional[float]) -> Tuple[np.ndarray, np.n
             data = data[None, :]
         if data.shape[1] != 7 + F4_NUM_JOINTS:
             raise ValueError(
-                f"F2 CSV must have 21 columns (3 root position + 4 xyzw quaternion + "
+                f"F4 CSV must have 21 columns (3 root position + 4 xyzw quaternion + "
                 f"14 joints), got {data.shape[1]}"
             )
         if input_fps is None:
@@ -255,11 +257,11 @@ def load_input(path: Path, input_fps: Optional[float]) -> Tuple[np.ndarray, np.n
     return root_pos, normalize_quaternions_xyzw(root_quat), joint_pos, float(fps)
 
 #创建运动学模型
-def load_f2_kinematics(gmr_root: Path):
+def load_f4_kinematics(gmr_root: Path):
     gmr_root = gmr_root.resolve()
     xml_path = gmr_root / "assets" / "f4" / "f4.xml"
     if not xml_path.is_file():
-        raise FileNotFoundError(f"F2 GMR XML not found: {xml_path}")
+        raise FileNotFoundError(f"F4 GMR XML not found: {xml_path}")
     if str(gmr_root) not in sys.path:
         sys.path.insert(0, str(gmr_root))
     try:
@@ -269,10 +271,28 @@ def load_f2_kinematics(gmr_root: Path):
             f"cannot import GMR from {gmr_root}; check --gmr-root and its dependencies"
         ) from error
 
-    kinematics = KinematicsModel(str(xml_path), device="cpu")
+    # MuJoCo accepts multiple worldbody sections, but GMR's ElementTree parser
+    # only examines the first one. Merge them in a temporary kinematics XML;
+    # leave the original GMR asset unchanged. GMR reads no mesh files here.
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+    worldbodies = root.findall("worldbody")
+    bodies = [body for worldbody in worldbodies for body in worldbody.findall("body")]
+    if len(bodies) != 1:
+        raise ValueError(f"F4 kinematics requires one root body in {xml_path}; found {len(bodies)}")
+    if len(worldbodies) > 1:
+        for worldbody in worldbodies[1:]:
+            worldbodies[0].extend(list(worldbody))
+            root.remove(worldbody)
+        with tempfile.TemporaryDirectory(prefix="f4_kinematics_") as directory:
+            merged_path = Path(directory) / "f4.xml"
+            tree.write(merged_path, encoding="utf-8", xml_declaration=True)
+            kinematics = KinematicsModel(str(merged_path), device="cpu")
+    else:
+        kinematics = KinematicsModel(str(xml_path), device="cpu")
     if kinematics.num_dof != F4_NUM_JOINTS:
         raise ValueError(
-            f"F2 kinematics XML has {kinematics.num_dof} DOFs; expected {F4_NUM_JOINTS}"
+            f"F4 kinematics XML has {kinematics.num_dof} DOFs; expected {F4_NUM_JOINTS}"
         )
     active_joint_bodies = tuple(
         kinematics.body_names[index]
@@ -281,7 +301,7 @@ def load_f2_kinematics(gmr_root: Path):
     )
     if active_joint_bodies != F4_JOINT_BODY_NAMES:
         raise ValueError(
-            "F2 kinematics DOF order does not match the AMP order:\n"
+            "F4 kinematics DOF order does not match the AMP order:\n"
             f"expected={F4_JOINT_BODY_NAMES}\nactual={active_joint_bodies}"
         )
     return kinematics
@@ -365,7 +385,7 @@ def default_gmr_root() -> Path:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Convert 14-DOF GMR F2 CSV/PKL motion to the 47-column AMP TXT format."
+        description="Convert 14-DOF GMR F4 CSV/PKL motion to the 47-column AMP TXT format."
     )
     parser.add_argument("--input", type=Path, required=True, help="GMR .csv or .pkl input")
     parser.add_argument("--output", type=Path, required=True, help="output AMP .txt path")
@@ -381,7 +401,7 @@ def parse_args() -> argparse.Namespace:
         "--gmr-root",
         type=Path,
         default=default_gmr_root(),
-        help="GMR repository root used for F2 forward kinematics",
+        help="GMR repository root used for F4 forward kinematics",
     )
     return parser.parse_args()
 
@@ -392,7 +412,7 @@ def main() -> None:
     root_pos, root_quat, joint_pos = resample_motion(
         root_pos, root_quat, joint_pos, input_fps, args.output_fps
     )
-    kinematics = load_f2_kinematics(args.gmr_root)
+    kinematics = load_f4_kinematics(args.gmr_root)
     frames = build_amp_frames(root_pos, root_quat, joint_pos, args.output_fps, kinematics)
     write_amp_json(args.output, frames, args.output_fps, args.motion_weight)
 
