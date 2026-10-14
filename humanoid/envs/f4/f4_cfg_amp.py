@@ -394,7 +394,7 @@ class X3F4AMPCfg(LeggedRobotCfg):
             dof_vel = -1e-3
             dof_acc = -5e-7
             #======================= reward for safety ===================
-            # dof_pos_limits = -5.
+            dof_pos_limits = -5.
             dof_pos_knee_limits = -2.
             # dof_torque_limits = -0.01
             # dof_vel_limits = -0.5

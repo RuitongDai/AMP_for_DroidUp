@@ -2468,9 +2468,16 @@ class X3F4Env(BaseTask):
         return torch.sum(out_of_limits, dim=1)
 
     def _reward_dof_pos_knee_limits(self):
-        # Penalize dof positions too close to the limit
-        out_of_limits = -(self.dof_pos[:,[3, 9]] - 0.0).clip(max=0.)  # lower limit
-        out_of_limits += (self.dof_pos[:,[3, 9]] - 2.3).clip(min=0.)
+        knee_pos = self.dof_pos[:, [3, 9]]
+
+        # 站立时保持一定屈膝；行走时沿用原来的下限
+        lower_limit = torch.where(
+            self.stand_command, 0.15, 0.0
+        ).unsqueeze(1)
+
+        out_of_limits = (lower_limit - knee_pos).clamp(min=0.)
+        out_of_limits += (knee_pos - 2.3).clamp(min=0.)
+
         return torch.sum(out_of_limits, dim=1)
 
     def _reward_dof_torque_limits(self):
