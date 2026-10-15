@@ -144,7 +144,7 @@ class X3F4AMPCfg(LeggedRobotCfg):
             heading = [-3.14, 3.14]
 
     class init_state(LeggedRobotCfg.init_state):
-        pos = [0.0, 0.0, 0.875]  # x,y,z [m]
+        pos = [0.0, 0.0, 0.88]  # x,y,z [m]
         default_joint_angles = { # = target angles [rad] when action = 0.0
            'left_hip_pitch_joint': -0.10,
            'left_hip_roll_joint': 0,
@@ -164,16 +164,16 @@ class X3F4AMPCfg(LeggedRobotCfg):
 
     class control(LeggedRobotCfg.control):
         # PD Drive parameters:
-        stiffness = {'hip_pitch': 100,
-                     'hip_yaw':   100,
-                     'hip_roll':  100,
-                     'knee': 150,
-                     'ankle': 30,
+        stiffness = {'hip_pitch': 200,
+                     'hip_yaw':   150,
+                     'hip_roll':  200,
+                     'knee': 200,
+                     'ankle': 50,
                      'waist': 200,
                      }  # [N*m/rad]
-        damping = {  'hip_pitch': 2,
+        damping = {  'hip_pitch': 4,
                      'hip_yaw': 2,
-                     'hip_roll': 2,
+                     'hip_roll': 4,
                      'knee': 4,
                      'ankle': 2,
                      'waist': 5,
