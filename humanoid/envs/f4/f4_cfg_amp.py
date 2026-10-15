@@ -224,7 +224,7 @@ class X3F4AMPCfg(LeggedRobotCfg):
         decimation = 4  # 50hz
 
     class asset(LeggedRobotCfg.asset):
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/F4/f4_14dof.urdf'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/F4/f4_14dof_hand_down.urdf'
         name = "x3f4"
         foot_name = "ankle_roll"
         knee_name = "knee"
