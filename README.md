@@ -28,6 +28,13 @@
 ```bash
 # This command initiates the PPO algorithm-based training for the humanoid task.
 python scripts/train.py --task=x3_zq_amp  --headless --num_envs 4096
+python humanoid/scripts/train.py \
+  --task=f4_amp \
+  --headless \
+  --num_envs=4096 \
+  --resume \
+  --load_run="2026-10-11_16-15-19_AMP_x3_f4_50hz" \
+  --checkpoint=20000
 python scripts/play.py --task=x3_zq_amp
 python scripts/play_amp_motions.py --task=x3_zq_amp
 
