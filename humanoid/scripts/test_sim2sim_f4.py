@@ -5,6 +5,7 @@ import math
 import tempfile
 import threading
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -37,6 +38,34 @@ class Sim2SimTests(unittest.TestCase):
         np.testing.assert_allclose(self.model.actuator_ctrlrange[self.sim.actuator_ids, 1],
                                    Config.torque_limits)
         np.testing.assert_allclose(self.sim.data.qpos[self.sim.q_indices], Config.default_pos)
+
+    def test_fixed_arm_pose_matches_training_urdf(self):
+        for joint in ET.parse(Config.training_asset).getroot().findall("joint"):
+            if joint.get("type") != "fixed" or "hand" in joint.get("name"):
+                continue
+            body_name = joint.find("child").get("link")
+            if body_name == "imu_in_pelvis":
+                continue
+            body = self.model.body(body_name)
+            origin = joint.find("origin")
+            np.testing.assert_allclose(body.pos, np.fromstring(origin.get("xyz"), sep=" "))
+            roll, pitch, yaw = np.fromstring(origin.get("rpy"), sep=" ")
+            cr, cp, cy = np.cos([roll, pitch, yaw])
+            sr, sp, sy = np.sin([roll, pitch, yaw])
+            rx = np.array([[1, 0, 0], [0, cr, -sr], [0, sr, cr]])
+            ry = np.array([[cp, 0, sp], [0, 1, 0], [-sp, 0, cp]])
+            rz = np.array([[cy, -sy, 0], [sy, cy, 0], [0, 0, 1]])
+            actual = np.empty(9)
+            mujoco.mju_quat2Mat(actual, body.quat)
+            np.testing.assert_allclose(actual.reshape(3, 3), rz @ ry @ rx, atol=1e-12)
+
+    def test_small_commands_are_zeroed_per_axis_before_standing(self):
+        command = np.array([0.19, -0.19, 0.19])
+        obs = self.sim.get_obs(command, "stand_and_walk")[0, -52:]
+        np.testing.assert_array_equal(obs[:5], 0)
+        np.testing.assert_array_equal(command, [0.19, -0.19, 0.19])
+        obs = self.sim.get_obs(np.array([0.2, -0.2, 0.19]), "stand_and_walk")[0, -52:]
+        np.testing.assert_allclose(obs[:5], [0, 1, 0.4, -0.4, 0])
 
     def test_observation_layout_and_body_frame(self):
         sim = self.sim

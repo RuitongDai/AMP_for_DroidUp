@@ -23,7 +23,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class Config:
-    # Isaac Gym order from f4_14dof.urdf: waist ROLL, then YAW.
+    # Isaac Gym order from f4_14dof_hand_down.urdf: waist ROLL, then YAW.
+    training_asset = ROOT / "resources/robots/F4/f4_14dof_hand_down.urdf"
     joint_names = tuple(
         f"{side}_{joint}_joint"
         for side in ("left", "right")
@@ -39,6 +40,7 @@ class Config:
     cycle_time_low = 1.1
     clock_enable = 1.0
     stand_threshold = 0.05
+    min_command = 0.2
     stand_speed = 0.5
     action_scale = 0.25
     clip_obs = 18.0
@@ -49,16 +51,16 @@ class Config:
     dof_vel_scale = 0.05
     euler_scale = 1.0
     default_pos = np.array([-0.1, 0, 0, 0.2, -0.1, 0] * 2 + [0, 0])
-    kp = np.array([100, 100, 100, 150, 30, 30] * 2 + [200, 200])
-    kd = np.array([2, 2, 2, 4, 2, 2] * 2 + [5, 5])
+    kp = np.array([200, 200, 150, 200, 50, 50] * 2 + [200, 200])
+    kd = np.array([4, 4, 2, 4, 2, 2] * 2 + [5, 5])
     torque_limits = np.array([75, 80, 80, 120, 60, 15] * 2 + [80, 80])
     command_lower = np.array([-0.6, -0.5, -1.5])
     command_upper = np.array([1.0, 0.5, 1.5])
-    base_pos = np.array([0, 0, 0.875])
+    base_pos = np.array([0, 0, 0.885])
 
 
 def load_model(scene_path):
-    """Fix non-policy joints at zero, retaining their bodies and inertias.
+    """Fix non-policy joints in the training pose, retaining bodies and inertias.
 
     The supplied scene has 28 motors, while training fixes all arm joints.
     Expand includes in memory so the source assets remain reusable.
@@ -84,11 +86,30 @@ def load_model(scene_path):
         return root
 
     root = read_xml(Path(scene_path).resolve())
+    fixed_origins = {
+        joint.get("name"): joint.find("origin")
+        for joint in ET.parse(Config.training_asset).getroot().findall("joint")
+        if joint.get("type") == "fixed"
+    }
     fixed = set()
     for body in root.iter("body"):
         for joint in list(body.findall("joint")):
             name = joint.get("name")
             if joint.get("type", "hinge") != "free" and name not in Config.joint_names:
+                # The training URDF bakes the hanging-arm pose into fixed-joint
+                # origins. Removing the MJCF hinges alone leaves the old pose.
+                if name not in fixed_origins:
+                    raise ValueError(f"Non-policy joint {name!r} is not fixed in the training asset")
+                origin = fixed_origins[name]
+                body.set("pos", origin.get("xyz", "0 0 0"))
+                roll, pitch, yaw = np.fromstring(origin.get("rpy", "0 0 0"), sep=" ") / 2
+                cr, cp, cy = np.cos([roll, pitch, yaw])
+                sr, sp, sy = np.sin([roll, pitch, yaw])
+                quat = [cr*cp*cy + sr*sp*sy, sr*cp*cy - cr*sp*sy,
+                        cr*sp*cy + sr*cp*sy, cr*cp*sy - sr*sp*cy]
+                for attribute in ("euler", "axisangle", "xyaxes", "zaxis"):
+                    body.attrib.pop(attribute, None)
+                body.set("quat", " ".join(map(str, quat)))
                 fixed.add(name)
                 body.remove(joint)
             elif name in Config.joint_names:
@@ -221,6 +242,9 @@ class Sim2Sim:
         return velocity, gyro, euler
 
     def get_obs(self, command, mode):
+        # Match f4_env._zero_small_commands per axis; keep the raw control input
+        # intact so keyboard increments can still accumulate past the deadband.
+        command = np.where(np.abs(command) >= Config.min_command, command, 0.0)
         velocity, gyro, euler = self.base_state()
         standing = (mode == "stand_and_walk"
                     and np.linalg.norm(command) < Config.stand_threshold
