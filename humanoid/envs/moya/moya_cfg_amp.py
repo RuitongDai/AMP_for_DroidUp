@@ -25,25 +25,25 @@ Terrain_point_x, Terrain_point_y = create_point_list(resolution=0.1,
                                                      range_x=(-0.5, 0.5),
                                                      range_y=(-0.5, 0.5),
                                                      debug=True)
-F2_DATASET_DIR = os.path.join(
+MOYA_DATASET_DIR = os.path.join(
     LEGGED_GYM_ROOT_DIR,
     "humanoid",
     "envs",
     "datasets",
-    "f2",
+    "moya",
 )
-F2_MOTION_FILES = [
-    os.path.join(F2_DATASET_DIR, "bufa100.txt"),
+MOYA_MOTION_FILES = [
+    os.path.join(MOYA_DATASET_DIR, "017.txt"),
 ]
 
-class F2AMPCfg(LeggedRobotCfg):
+class MoyaAMPCfg(LeggedRobotCfg):
     """
-    Configuration class for the F2 humanoid robot.
+    Configuration for the 14-DOF Moya F4.1 lower-body robot.
     """
     class env(LeggedRobotCfg.env):
         reference_state_initialization = True
 
-        amp_motion_files_display = F2_MOTION_FILES
+        amp_motion_files_display = MOYA_MOTION_FILES
 
         # change the observation dim
         frame_stack = 15
@@ -154,8 +154,8 @@ class F2AMPCfg(LeggedRobotCfg):
            'right_knee_joint' : 0.20,
            'right_ankle_pitch_joint': -0.10,
            'right_ankle_roll_joint' : 0,
-           'waist_yaw_joint': 0,
            'waist_roll_joint': 0,
+           'waist_yaw_joint': 0,
         }
 
     class control(LeggedRobotCfg.control):
@@ -200,29 +200,25 @@ class F2AMPCfg(LeggedRobotCfg):
             'waist': 0.0,
         }
         # ============== motor limit and dof limit ==============
-        dof_torque_max = [80.,  80.,  80.,  120., 60.,  15.,
-                          80.,  80.,  80.,  120., 60.,  15., 80., 80.]
-
-        dof_vel_max = [10.,  10.,  10.,   10.,  10.,  5.,
-                       10.,  10.,  10.,   10.,  10.,  5., 6., 6.]
-
-
-        dof_torque_limits = [75.,  80.,  80.,  120.,  60.,  15.,
-                             75.,  80.,  80.,  120.,  60.,  15., 80., 80.]
-
-        dof_vel_limits = [ 10.,   10.,   10.,  10.,  10.,  5.,
-                           10.,   10.,   10.,  10.,  10.,  5., 6., 6.]
+        # URDF order: left leg (6), right leg (6), waist roll, waist yaw.
+        # Keep simulator limits and controller clipping within the asset ratings.
+        dof_torque_max = [140., 140., 80., 130., 36., 36.,
+                          140., 140., 80., 130., 36., 36., 87., 87.]
+        dof_vel_max = [12.56, 12.56, 7.3304, 4.4, 6.283, 6.283,
+                       12.56, 12.56, 7.3304, 4.4, 6.283, 6.283, 5.44, 5.44]
+        dof_torque_limits = dof_torque_max.copy()
+        dof_vel_limits = dof_vel_max.copy()
 
         action_scale = 0.25
         decimation = 4
 
     class asset(LeggedRobotCfg.asset):
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/F2_ZZ1_waiguan/x3_f2_14dof.xml'
-        name = "f2"
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/MoyaF4.1/moya_f4_1_lower.urdf'
+        name = "moya"
         foot_name = "ankle_roll"
         knee_name = "knee"
         terminate_after_contacts_on = ["pelvis"]
-        penalize_contacts_on = ["pelvis", "knee"]
+        penalize_contacts_on = ["pelvis"]
         self_collisions = 0
         flip_visual_attachments = False
         replace_cylinder_with_capsule = True
@@ -251,7 +247,7 @@ class F2AMPCfg(LeggedRobotCfg):
         # 摩擦系数
         randomize_friction = True
         num_buckets = 256
-        friction_range = [-0.1, 1.0]
+        friction_range = [0.1, 1.0]
         # 恢复系数
         randomize_restitution = False
         restitution_range = [0., 1.0]
@@ -324,13 +320,13 @@ class F2AMPCfg(LeggedRobotCfg):
         curriculum_init = 0.3
         penalize_curriculum_sigma = 0.8
         base_height_target = 0.8 # 0.10 rad
-        feet_height = 0.025
+        feet_height = 0.056  # ankle-roll origin to capsule bottom: 0.046 + 0.01 m
         target_feet_height = 0.08    # m
         # target_knee_swing_pos = 0.8  # rad
         # target_hip_swing_pos = -0.9  # rad
 
         clock_enable = 1 # 1: 使用[sin、cos]时钟信号,  0: 不使用时钟信号
-        cycle_time = 1.2                   # sec
+        cycle_time = 1.2                   # seconds per complete left/right gait cycle
         stand_radio = 0.65
         gait_radio = True
         feet_air_time = 0.6
@@ -444,10 +440,10 @@ class F2AMPCfg(LeggedRobotCfg):
             # 0: never, 1: last sub-step, 2: all sub-steps (default=2)
             contact_collection = 2
 
-Short_obs = 10 * F2AMPCfg.env.num_single_obs # input actor
-Long_obs =  10 * F2AMPCfg.env.num_single_obs # input state_encoder
+Short_obs = 10 * MoyaAMPCfg.env.num_single_obs # input actor
+Long_obs =  10 * MoyaAMPCfg.env.num_single_obs # input state_encoder
 
-class F2AMPCfgPPO(LeggedRobotCfgPPO):
+class MoyaAMPCfgPPO(LeggedRobotCfgPPO):
     seed = 1
     runner_class_name = 'AmpOnPolicyRunner'
     class policy:
@@ -494,9 +490,9 @@ class F2AMPCfgPPO(LeggedRobotCfgPPO):
         amp_enable = True # 混合精度训练
         # -- Amp cfg
         class amp_cfg:
-            step_dt = 0.02
+            step_dt = MoyaAMPCfg.sim.dt * MoyaAMPCfg.control.decimation
 
-            amp_motion_files = F2_MOTION_FILES
+            amp_motion_files = MOYA_MOTION_FILES
 
             amp_num_preload_transitions = 200000
             amp_replay_buffer_size = 100000
@@ -522,25 +518,25 @@ class F2AMPCfgPPO(LeggedRobotCfgPPO):
                 -47, 48,-49,-50, 51   # ang_vel + ang
             ]
             act_permutation = [ 6,-7,-8, 9, 10,-11,  0.0001,-1,-2, 3, 4,-5, -12, -13]
-            frame_stack = F2AMPCfg.env.frame_stack
+            frame_stack = MoyaAMPCfg.env.frame_stack
             sym_coef = 1.0
 
         # -- est cfg
         class priv_est_cfg:
             obs_recon_loss = False
-            obs_cur_idx = F2AMPCfg.env.num_single_privileged_obs * (F2AMPCfg.env.c_frame_stack- 1)
+            obs_cur_idx = MoyaAMPCfg.env.num_single_privileged_obs * (MoyaAMPCfg.env.c_frame_stack- 1)
             obs_cur_dim = Single_obs_dim
 
             lin_vel_loss = True
-            lin_vel_idx = F2AMPCfg.env.num_single_privileged_obs * (F2AMPCfg.env.c_frame_stack- 1) + F2AMPCfg.env.lin_vel_idx
+            lin_vel_idx = MoyaAMPCfg.env.num_single_privileged_obs * (MoyaAMPCfg.env.c_frame_stack- 1) + MoyaAMPCfg.env.lin_vel_idx
             lin_vel_dim = 3
 
             feet_height_loss = False
-            feet_height_idx = F2AMPCfg.env.num_single_privileged_obs * (F2AMPCfg.env.c_frame_stack- 1) + F2AMPCfg.env.feet_height_idx
+            feet_height_idx = MoyaAMPCfg.env.num_single_privileged_obs * (MoyaAMPCfg.env.c_frame_stack- 1) + MoyaAMPCfg.env.feet_height_idx
             feet_height_dim = Feet_height_obs_dim
 
             height_recon_loss = False
-            height_idx = F2AMPCfg.env.num_single_privileged_obs * (F2AMPCfg.env.c_frame_stack- 1) + F2AMPCfg.env.height_idx
+            height_idx = MoyaAMPCfg.env.num_single_privileged_obs * (MoyaAMPCfg.env.c_frame_stack- 1) + MoyaAMPCfg.env.height_idx
             height_dim = Height_obs_dim
 
     class runner:
@@ -551,9 +547,9 @@ class F2AMPCfgPPO(LeggedRobotCfgPPO):
 
         # logging
         save_interval = 500  # check for potential saves every this many iterations
-        save_envs = "f2"
-        experiment_name = 'f2'
-        run_name = 'AMP_f2'
+        save_envs = "moya"
+        experiment_name = 'moya'
+        run_name = 'AMP_moya_50hz'
         # load and resume
         resume = False
         load_run = -1  # -1 = last run

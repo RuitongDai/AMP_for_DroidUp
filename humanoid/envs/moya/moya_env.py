@@ -9,7 +9,7 @@ from collections import deque
 from humanoid import LEGGED_GYM_ROOT_DIR
 from humanoid.utils.math import quat_apply_yaw, wrap_to_pi,quat_yaw
 from humanoid.utils.helpers import class_to_dict
-from .f2_cfg_amp import F2AMPCfg
+from .moya_cfg_amp import MoyaAMPCfg
 import torch
 from humanoid.envs.base.base_task import BaseTask
 from humanoid.utils.terrain import Terrain
@@ -23,8 +23,9 @@ def get_euler_xyz_tensor(quat):
     euler_xyz[euler_xyz > np.pi] -= 2 * np.pi
     return euler_xyz
 
-class F2Env(BaseTask):
-    def __init__(self, cfg: Union[F2AMPCfg], sim_params, physics_engine, sim_device, headless):
+class MoyaEnv(BaseTask):
+    """Moya F4.1 with fixed arms, 14 controlled joints and 34 AMP features."""
+    def __init__(self, cfg: Union[MoyaAMPCfg], sim_params, physics_engine, sim_device, headless):
         """ Parses the provided config file,
             calls create_sim() (which creates, simulation, terrain and environments),
             initilizes pytorch buffers used during training
@@ -37,7 +38,7 @@ class F2Env(BaseTask):
             device_id (int): 0, 1, ...
             headless (bool): Run without rendering if True
         """
-        self.cfg:Union[F2AMPCfg] = cfg
+        self.cfg:Union[MoyaAMPCfg] = cfg
         self.sim_params = sim_params
         self.height_samples = None
         self.debug_viz = getattr(self.cfg.viewer, "debug_viz", True)
@@ -375,8 +376,8 @@ class F2Env(BaseTask):
 
     def reset(self):
         """ Reset all robots"""
-        obs, privileged_obs, _, _, _, _, _ = self.step(torch.zeros(self.num_envs, self.num_actions, device=self.device, requires_grad=False))
         self.reset_idx(torch.arange(self.num_envs, device=self.device))
+        obs, privileged_obs, _, _, _, _, _ = self.step(torch.zeros(self.num_envs, self.num_actions, device=self.device, requires_grad=False))
         return obs, privileged_obs
 
     def reset_idx(self, env_ids: torch) -> None:
@@ -400,9 +401,16 @@ class F2Env(BaseTask):
         if self.cfg.commands.curriculum and (self.common_step_counter % self.max_episode_length == 0):
             self.update_command_curriculum(env_ids)
 
-        # reset robot states
+        # Keep the gait clock consistent with the randomly sampled expert time.
+        reference_phase = torch.zeros(len(env_ids), device=self.device)
         if getattr(self.cfg.env, "reference_state_initialization", False):
-            frames = self.amp_loader.get_full_frame_batch(len(env_ids))
+            traj_idxs = self.amp_loader.weighted_traj_idx_sample_batch(len(env_ids))
+            times = self.amp_loader.traj_time_sample_batch(traj_idxs)
+            frames = self.amp_loader.get_full_frame_at_time_batch(traj_idxs, times)
+            reference_phase = torch.as_tensor(
+                (times / self.cfg.rewards.cycle_time) % 1.0,
+                dtype=torch.float, device=self.device,
+            )
             self._reset_dofs_amp(env_ids, frames)
             self._reset_root_states_amp(env_ids, frames)
         else:
@@ -430,7 +438,19 @@ class F2Env(BaseTask):
         self.episode_length_buf[env_ids] = 0
         self.reset_buf[env_ids] = 1
         self.commands[env_ids] = 0.
-        self.phase[env_ids] = 0.
+        self.phase[env_ids] = reference_phase
+        self.phase_left[env_ids] = reference_phase
+        self.phase_right[env_ids] = (reference_phase + self.phase_offset) % 1.0
+        self.base_lin_vel[env_ids] = quat_rotate_inverse(
+            self.base_quat[env_ids], self.root_states[env_ids, 7:10]
+        )
+        self.base_ang_vel[env_ids] = quat_rotate_inverse(
+            self.base_quat[env_ids], self.root_states[env_ids, 10:13]
+        )
+        self.base_euler_xyz[env_ids] = get_euler_xyz_tensor(self.base_quat[env_ids])
+        self.projected_gravity[env_ids] = quat_rotate_inverse(
+            self.base_quat[env_ids], self.gravity_vec[env_ids]
+        )
         # resample command
         if self.cfg.commands.gait_enable:
             self.generate_gait_time(env_ids)
@@ -517,14 +537,7 @@ class F2Env(BaseTask):
 
 
     def _reset_dofs_amp(self, env_ids, frames):
-        """ Resets DOF position and velocities of selected environmments
-        Positions are randomly selected within 0.5:1.5 x default positions.
-        Velocities are set to zero.
-
-        Args:
-            env_ids (List[int]): Environemnt ids
-            frames: AMP frames to initialize motion with
-        """
+        """Restore expert joint positions and velocities in Moya DOF order."""
         self.dof_pos[env_ids] = AMPLoader.get_joint_pose_batch(frames)
         self.dof_vel[env_ids] = AMPLoader.get_joint_vel_batch(frames)
         env_ids_int32 = env_ids.to(dtype=torch.int32)
@@ -533,23 +546,29 @@ class F2Env(BaseTask):
                                               gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
 
     def _reset_root_states_amp(self, env_ids, frames):
-        """ Resets ROOT states position and velocities of selected environmments
-            Sets base position based on the curriculum
-            Selects randomized base velocities within -0.5:0.5 [m/s, rad/s]
-        Args:
-            env_ids (List[int]): Environemnt ids
-        """
+        """Restore expert height/orientation and rotate base velocities to world."""
         dr = self.cfg.domain_rand
-        # base position
-        if self.custom_origins:
-            self.root_states[env_ids] = self.base_init_state
-            self.root_states[env_ids, :3] += self.env_origins[env_ids]
+        self.root_states[env_ids] = self.base_init_state
+        self.root_states[env_ids, :3] += self.env_origins[env_ids]
+        if self.custom_origins and dr.reset_base_pose:
             self.root_states[env_ids, :2] += torch.empty_like(self.root_states[env_ids, :2]).uniform_(dr.pose_xy[0], dr.pose_xy[1])
-        else:
-            self.root_states[env_ids] = self.base_init_state
-            self.root_states[env_ids, :3] += self.env_origins[env_ids]
-        # base velocities
-        self.root_states[env_ids, 7:10] = AMPLoader.get_linear_vel_batch(frames)
+
+        # Discard dataset XY travel so robots spawn in their own terrain patches.
+        self.root_states[env_ids, 2] = (
+            self.env_origins[env_ids, 2] + AMPLoader.get_root_pos_batch(frames)[:, 2]
+        )
+        root_quat = AMPLoader.get_root_rot_batch(frames)
+        if dr.reset_base_pose:
+            yaw = torch.empty(len(env_ids), device=self.device).uniform_(*dr.pose_yaw)
+            zeros = torch.zeros_like(yaw)
+            root_quat = quat_mul(quat_from_euler_xyz(zeros, zeros, yaw), root_quat)
+        self.root_states[env_ids, 3:7] = root_quat
+        self.root_states[env_ids, 7:10] = quat_rotate(
+            root_quat, AMPLoader.get_linear_vel_batch(frames)
+        )
+        self.root_states[env_ids, 10:13] = quat_rotate(
+            root_quat, AMPLoader.get_angular_vel_batch(frames)
+        )
 
         if self.cfg.asset.fix_base_link:
             self.root_states[env_ids, 7:13] = 0
@@ -581,7 +600,10 @@ class F2Env(BaseTask):
         """
         self.up_axis_idx = 2  # 2 for z, 1 for y -> adapt gravity accordingly
         self.sim = self.gym.create_sim(
-            self.sim_device_id, self.graphics_device_id, self.physics_engine, self.sim_params)
+            self.sim_device_id, -1 if self.headless else self.graphics_device_id,
+            self.physics_engine, self.sim_params)
+        if self.sim is None:
+            raise RuntimeError("Failed to create the Moya simulation")
         mesh_type = self.cfg.terrain.mesh_type
         if mesh_type in ['heightfield', 'trimesh']:
             # self.terrain = HumanoidTerrain(self.cfg.terrain, self.num_envs)
@@ -639,6 +661,10 @@ class F2Env(BaseTask):
         self.robot_asset = robot_asset
         self.num_dof = self.gym.get_asset_dof_count(robot_asset)
         self.num_bodies = self.gym.get_asset_rigid_body_count(robot_asset)
+        if self.num_dof != self.num_actions:
+            raise ValueError(
+                f"Moya lower-body asset must have {self.num_actions} DOFs; got {self.num_dof}"
+            )
         dof_props_asset = self.gym.get_asset_dof_properties(robot_asset)
         rigid_shape_props_asset = self.gym.get_asset_rigid_shape_properties(robot_asset)
         # -- check arm dof
@@ -661,8 +687,19 @@ class F2Env(BaseTask):
         body_names = self.gym.get_asset_rigid_body_names(robot_asset)
         self.dof_names = self.gym.get_asset_dof_names(robot_asset)
         self.body_names = body_names
-        feet_names = [s for s in body_names if self.cfg.asset.foot_name in s]
-        knee_names = [s for s in body_names if self.cfg.asset.knee_name in s]
+        expected_dof_names = list(self.cfg.init_state.default_joint_angles)
+        if self.dof_names != expected_dof_names:
+            raise ValueError(
+                "Moya DOF order does not match the expert motion order:\n"
+                f"expected={expected_dof_names}\nactual={self.dof_names}"
+            )
+        feet_names = ["left_ankle_roll_link", "right_ankle_roll_link"]
+        knee_names = ["left_knee_link", "right_knee_link"]
+        required_bodies = feet_names + knee_names + ["pelvis", "torso_link"]
+        missing_bodies = [name for name in required_bodies if name not in body_names]
+        if missing_bodies:
+            raise ValueError(f"Moya asset is missing required bodies: {missing_bodies}")
+        self.torso_index = self.gym.find_asset_rigid_body_index(robot_asset, "torso_link")
         penalized_contact_names = []
         termination_contact_names = []
         for name in self.cfg.asset.penalize_contacts_on:
@@ -725,7 +762,7 @@ class F2Env(BaseTask):
         for i in range(self.num_envs):
             # create env instance
             env_handle = self.gym.create_env(self.sim, env_lower, env_upper, int(np.sqrt(self.num_envs)))
-            pos = self.env_origins[i].clone()
+            pos = self.env_origins[i].clone() + self.base_init_state[:3]
             pos[:2] += torch_rand_float(self.cfg.domain_rand.pose_xy[0], self.cfg.domain_rand.pose_xy[1], (2,1), device=self.device).squeeze(1)
             start_pose.p = gymapi.Vec3(*pos)
 
@@ -786,10 +823,10 @@ class F2Env(BaseTask):
         # -- robot terrain level, type, mask
         self.level_idx = torch.ones(self.num_envs,dtype=torch.long,device=self.device)
         self.type_idx = torch.ones(self.num_envs, dtype=torch.long, device=self.device)
-        self.terrain_mask = torch.ones(self.num_envs, dtype=torch.bool, device=self.device)
+        self.terrain_mask = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
         self.plane_mask = torch.ones(self.num_envs, dtype=torch.bool, device=self.device)
-        self.slope_mask = torch.ones(self.num_envs, dtype=torch.bool, device=self.device)
-        self.step_mask = torch.ones(self.num_envs, dtype=torch.bool, device=self.device)
+        self.slope_mask = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        self.step_mask = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
 
         self.gym.add_ground(self.sim, plane_params)
 
@@ -1754,8 +1791,8 @@ class F2Env(BaseTask):
         vel = torch.abs(self.commands[:, 0])
         slow = vel < 0.2
 
-        self.cycle_time[slow] = 1.1
-        self.cycle_time[~slow] = self.cfg.rewards.cycle_time
+        # Preserve the expert's fixed gait period even for slow walking.
+        self.cycle_time.fill_(self.cfg.rewards.cycle_time)
 
         self.stand_radio[slow] = 0.65
         self.stand_radio[~slow] = self.cfg.rewards.stand_radio
@@ -2008,9 +2045,9 @@ class F2Env(BaseTask):
 
         root_pos = visual_motion_frame[0:3].clone()
         quat_xyzw = visual_motion_frame[3:7].clone()
-        quat_wxyz = torch.tensor([quat_xyzw[0], quat_xyzw[1], quat_xyzw[2], quat_xyzw[3]], dtype=torch.float32, device=device)
-        lin_vel = visual_motion_frame[27:30].clone()
-        ang_vel = visual_motion_frame[30:33].clone()
+        root_quat = quat_xyzw.unsqueeze(0).repeat(self.num_envs, 1)
+        lin_vel = quat_rotate(root_quat, visual_motion_frame[27:30].unsqueeze(0).repeat(self.num_envs, 1))
+        ang_vel = quat_rotate(root_quat, visual_motion_frame[30:33].unsqueeze(0).repeat(self.num_envs, 1))
         self.dof_pos[:, 0:self.num_actions] = visual_motion_frame[7  : 21]
         self.dof_vel[:, 0:self.num_actions] = visual_motion_frame[33 : 47]
 
@@ -2025,11 +2062,11 @@ class F2Env(BaseTask):
         # self.dof_pos[:, 0:self.num_actions] = visual_motion_frame[7  : 21]
         # self.dof_vel[:, 0:self.num_actions] = visual_motion_frame[27 : 41]
 
-        # root state: [x, y, z, qw, qx, qy, qz, vx, vy, vz, wx, wy, wz]
+        # Isaac Gym root state uses xyzw quaternions and world-frame velocities.
         self.root_states[:, 0:3] = torch.tile(root_pos.unsqueeze(0), (self.num_envs, 1))
-        self.root_states[:, 3:7] = torch.tile(quat_wxyz.unsqueeze(0), (self.num_envs, 1))
-        self.root_states[:, 7:10] = torch.tile(lin_vel.unsqueeze(0), (self.num_envs, 1))
-        self.root_states[:, 10:13] = torch.tile(ang_vel.unsqueeze(0), (self.num_envs, 1))
+        self.root_states[:, 3:7] = root_quat
+        self.root_states[:, 7:10] = lin_vel
+        self.root_states[:, 10:13] = ang_vel
 
         self.gym.set_dof_state_tensor_indexed(self.sim,
                                               gymtorch.unwrap_tensor(self.dof_state),
@@ -2218,7 +2255,7 @@ class F2Env(BaseTask):
         return lin_vel_error
 
     def _reward_tracking_stuck(self):
-        reward = torch.abs(self.base_lin_vel[:, 0] < 0.3) * torch.abs(self.commands[:, 0] > 0.3)
+        reward = ((self.base_lin_vel[:, 0] < 0.3) & (self.commands[:, 0] > 0.3)).float()
         return reward
 
     def _reward_tracking_ang_vel_l2(self):
@@ -2237,20 +2274,20 @@ class F2Env(BaseTask):
 
     # ==================================== base pos  =========================================== #
     def _reward_torso_gravity(self):
-        torso_quat = self.rigid_body_quat[:, 14]
+        torso_quat = self.rigid_body_quat[:, self.torso_index]
         projected_gravity = quat_rotate_inverse(torso_quat, self.gravity_vec)
         rew = torch.sum(torch.square(projected_gravity[:, :2]), dim=1)
         return rew
 
     def _reward_torso_ang_vel_xy(self):
-        torso_quat = self.rigid_body_quat[:, 14]
-        torso_ang_vel = quat_rotate_inverse(torso_quat, self.rigid_body_ang[:, 14])
+        torso_quat = self.rigid_body_quat[:, self.torso_index]
+        torso_ang_vel = quat_rotate_inverse(torso_quat, self.rigid_body_ang[:, self.torso_index])
         rew = torch.sum(torch.square(torso_ang_vel[:, :2]), dim=1)
         return rew
 
     def _reward_torso_lin_vel_z(self):
         # Penalize z axis base linear velocity
-        torso_lin_vel = self.rigid_body_vel[:, 14]
+        torso_lin_vel = self.rigid_body_vel[:, self.torso_index]
         return torch.square(torso_lin_vel[:, 2])
 
     def _reward_base_height(self):
