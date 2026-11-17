@@ -353,8 +353,10 @@ class MoyaAMPCfg(LeggedRobotCfg):
             feet_gait_stance = -1.0
             feet_gait_swing = -2.0
             feet_slide = -0.2
+            feet_y_distance = -4.0
             # feet_too_near = -2.
             feet_x_distance = -2.
+
             # ==================== vel tracking =======================
             tracking_stuck = -0.5
             tracking_lin_vel = 1.0
