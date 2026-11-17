@@ -129,6 +129,77 @@ MuJoCo 接触模型与 Isaac Gym 不同，最终行走效果需用自己的 F4 O
 python -m unittest discover -s humanoid/scripts -p 'test_sim2sim_f4.py'
 ```
 
+### Moya AMP sim2sim (ONNX / MuJoCo)
+
+在项目根目录运行，不依赖 Isaac Gym：
+
+```bash
+python -m pip install numpy mujoco onnxruntime
+
+# 使用键盘控制：W/S 前后、A/D 横移、J/L 转向、空格清零、R 重置
+python humanoid/scripts/sim2sim_moya.py --onnx /path/to/moya_policy.onnx --keyboard
+
+# 默认使用手柄，需要额外安装 evdev，按键映射与上面的 F4 脚本一致
+python humanoid/scripts/sim2sim_moya.py --onnx /path/to/moya_policy.onnx
+
+# 无窗口运行 10 秒，并记录状态、目标关节角和力矩
+python humanoid/scripts/sim2sim_moya.py --onnx /path/to/moya_policy.onnx \
+  --fixed-command --headless --no-realtime --duration 10 --cmd 0.4 0 0 \
+  --csv /tmp/moya_sim.csv
+```
+
+默认场景为 `resources/robots/MoyaF4.1/MoyaF4.1_scene_lower.xml`，训练资产为
+`resources/robots/MoyaF4.1/MoyaF4_lower_arms_down.urdf`。脚本在内存中同步训练 URDF 的
+固定关节姿态和碰撞体：手臂保持训练姿态，机器人仅保留骨盆球体和每只脚的 7 个胶囊体。
+可用 `--xml` 指定场景、`--training-urdf` 指定导出策略训练时使用的 URDF。
+
+观测为 float32 `[1, 780]`，即 52 维 × 15 帧，按从旧到新排列。策略输出为 `[1, 14]`，
+关节按名称映射，腰部顺序为 roll、yaw。物理步长 0.005 秒，控制频率 50 Hz，所有行走
+方向均使用固定 1.2 秒周期。PD 增益、力矩限幅、初始姿态及观测缩放对应当前
+`moya_cfg_amp.py`；若训练时修改过这些参数，需同步脚本中的 `Config`。
+
+键盘 `1` 为持续步态，`2` 为自动站立/行走。CSV 默认保存到 `logs/moya_sim2sim/`。
+ONNX 需使用 Moya 策略；现有 F4 策略即使输入输出维度一致，也不能代替 Moya 策略验证行走。
+
+```bash
+# 测试额外需要 onnx：python -m pip install onnx
+python -m unittest discover -s humanoid/scripts -p 'test_sim2sim_moya.py' -v
+```
+
+### Moya AMP 数据播放（MuJoCo，无需 Isaac Gym）
+
+`humanoid/scripts/play_amp_motion.py` 会创建 Isaac Gym 环境。只想查看 `017.txt` 中的
+参考动作时，可以使用下面的 MuJoCo 播放器，无需训练策略或 ONNX，也不会导入 Isaac Gym。
+
+```bash
+python -m pip install numpy mujoco
+
+# 按数据实际帧率播放；--loop 在片段结束后回到第一帧
+python humanoid/scripts/play_moya_motion.py --loop
+
+# 半速播放，同时显示骨盆和双脚的碰撞体
+python humanoid/scripts/play_moya_motion.py --loop --speed 0.5 --show-collisions
+
+# 在指定帧暂停，使用左右方向键检查相邻姿态
+python humanoid/scripts/play_moya_motion.py --start-frame 112 --paused
+
+# 没有显示器时，快速检查完整数据，无需打开窗口
+python humanoid/scripts/play_moya_motion.py --headless --no-realtime
+```
+
+默认读取 `humanoid/envs/datasets/moya/017.txt`；`--motion /path/to/motion.txt` 可指定其他
+47 列 AMP 数据，播放帧率以文件中的 `FrameDuration` 为准。播放器逐帧设置根节点位姿和
+14 个关节角，只更新运动学，不做重力、PD 或接触积分，也不做帧间插值，适合检查原始动作。
+`--in-place` 可固定根节点 XY 平移，`--duration 10` 可限制播放的数据时长。
+
+窗口按键：空格暂停/继续，左右方向键逐帧查看并暂停，`R` 回到第一帧，`+/-` 调速。
+手臂姿态和碰撞体默认跟随当前 `MoyaF4_lower_arms_down.urdf`；如需显示另一个训练版本，
+可传入 `--training-urdf`。它是动作数据查看器，策略闭环测试仍使用 `sim2sim_moya.py`。
+
+```bash
+python -m unittest discover -s humanoid/scripts -p 'test_play_moya_motion.py' -v
+```
+
 ## Troubleshooting
 
 Observe the following cases:
