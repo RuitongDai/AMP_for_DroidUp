@@ -213,7 +213,7 @@ class MoyaAMPCfg(LeggedRobotCfg):
         decimation = 4
 
     class asset(LeggedRobotCfg.asset):
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/MoyaF4.1/moya_f4_1_lower.urdf'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/MoyaF4.1/MoyaF4_lower_arms_down.urdf'
         name = "moya"
         foot_name = "ankle_roll"
         knee_name = "knee"
